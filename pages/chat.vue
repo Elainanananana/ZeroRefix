@@ -39,9 +39,7 @@
             />
             <button class="iconBtn" @click="send" aria-label="送出">
               <!-- 簡單放個放大鏡/送出圖示 -->
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                <path d="M21 11H6.414l5.293-5.293-1.414-1.414L2.586 12l7.707 7.707 1.414-1.414L6.414 13H21z" fill="currentColor"/>
-              </svg>
+              <img src="~/assets/up-lg-svgrepo-com (3).svg" width="18" height="18" color="white" alt="送出" />
             </button>
           </div>
         </footer>
@@ -98,10 +96,14 @@
   
   <style scoped>
   /* 版面 */
+  *{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
   .page {
     display: grid;
     grid-template-columns: 160px 1fr;
-    min-height: 100vh;
     background: #ffffff;
     color: #0f172a; /* 深藍灰 */
   }
@@ -125,7 +127,7 @@
   /* 內容區 */
   .chat {
     display: grid;
-    grid-template-rows: 48px 1fr auto;
+    grid-template-rows: 32px 1fr auto;
     height: 100vh;
   }
   .header {
@@ -134,8 +136,10 @@
   
   /* 對話訊息 */
   .messages {
+    flex: 1 !important;
     padding: 20px 28px;
     overflow: auto;
+    height: auto;
   }
   .msg {
     max-width: 72ch;
