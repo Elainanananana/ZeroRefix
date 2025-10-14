@@ -5,6 +5,7 @@
     <div class="links">
       <NuxtLink to="/test" class="btn">查看測試流程圖</NuxtLink>
       <NuxtLink to="/chat" class="btn">進入聊天室</NuxtLink>
+      <NuxtLink to="/benefits" class="btn">美化流程圖</NuxtLink>
     </div>
     <div class="links">
       <NuxtLoadingIndicator />
