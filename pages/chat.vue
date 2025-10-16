@@ -26,7 +26,7 @@
 
             <!-- 最後一段顯示按鈕 -->
             <div class="actions" v-if="m.isFinal">
-              <button class="btn primary">前往申辦流程圖</button>
+              <button class="btn primary" @click="goToBenefits">前往申辦流程圖</button>
             </div>
           </template>
         </div>
@@ -47,6 +47,8 @@
 
 <script setup>
 import { ref, nextTick, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useMermaidChart } from '~/composables/useMermaidChart'
 
 const messages = ref([])
 const draft = ref('')
@@ -55,6 +57,8 @@ const isIntro = ref(true)           // 尚未「送出」任何訊息 → 輸入
 const scriptStep = ref(0)           // 目前要送出的腳本段落索引（0→1→2）
 const messagesEl = ref(null)
 const isComposing = ref(false)      // 中文輸入法組字狀態（避免誤送）
+const router = useRouter()
+const { setChart, setSelected } = useMermaidChart()
 
 // 三段腳本，逐步等使用者回覆才送下一段
 const scriptedReplies = [
@@ -129,6 +133,12 @@ function queueTypingAndReply(text, isFinal = false, done) {
       content: text,
       isFinal
     }
+    if (isFinal) {
+      // 只記錄使用者選擇的申辦類型（示例先固定 medical，可依對話解析）
+      setSelected('medical')
+      // 若你仍想在某些情況覆蓋圖，保留 setChart；否則可不設定，將沿用 benefits.vue 內完整圖
+      setChart('', { generatedAt: Date.now() })
+    }
     nextTick().then(scrollToBottom)
     if (done) setTimeout(done, 240) // 段落間微停頓
   }, delay)
@@ -148,6 +158,35 @@ function scrollToBottom() {
     const el = messagesEl.value
     if (el) el.scrollTop = el.scrollHeight
   })
+}
+
+// 依對話內容產生 Mermaid 圖（示範版，可替換為你的規則引擎）
+function buildMermaidChart(history) {
+  // 擷取關鍵資訊（此處示範僅取用者第一則與系統最後結論）
+  const firstUser = history.find(m => m.role === 'user')?.content || '描述職災'
+  // 期限示例，可依實際規則動態計算
+  const deadline = '30 天內提出申請'
+
+  return `flowchart TB
+    A["了解情況：${firstUser}"] --> B["蒐集就醫/診斷證明"]
+    B --> C["檢附投保/薪資等文件"]
+    C --> D["向主管機關/勞保局送件"]
+    D --> E["等待審查與結果"]
+    E --> F["若通過：撥付給付"]
+    subgraph 時間線與注意事項
+      D --> G["期限：${deadline}"]
+      B --> H["文件需齊全且清晰"]
+    end
+    classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;
+    class A,B,C,D,E,F,G,H step
+  `
+}
+
+function goToBenefits() {
+  // 若尚未產出圖，保底再生成一次
+  setSelected('medical')
+  setChart('', { triggeredBy: 'button' })
+  router.push('/benefits')
 }
 </script>
 

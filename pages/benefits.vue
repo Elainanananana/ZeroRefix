@@ -53,7 +53,7 @@
       <!-- 中欄：流程 -->
       <main class="center card">
         <h2 class="flow-title">{{ current.name }}申請流程</h2>
-        <!-- <MermaidRenderer class="mmd" :chart="current.chart" /> -->
+        <MermaidRenderer class="mmd" :chart="sharedChart || current.chart" />
         <div class="chips">
           <button class="chip outline" @click="toast('取得最近可申請機構資訊')">
             取得最近可申請機構資訊
@@ -81,7 +81,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import MermaidRenderer from '~/components/MermaidRenderer.vue' // 先保留
+import MermaidRenderer from '~/components/MermaidRenderer.vue'
+import { useMermaidChart } from '~/composables/useMermaidChart'
 
 type Item = { id: string; name: string }
 
@@ -98,33 +99,76 @@ const notEligibleList = ref<Item[]>([
 const charts: Record<string, string> = {
   medical: `
     flowchart TB
-      A["1. 準備就醫證明"] --> B["2. 填寫 A 文件"]
-      B --> C["3. 填寫 B 文件"]
-      C --> D["4. 7/31 前繳交到 XXX 單位"]
-      D --> E["5. 等待審核通知"]
+      %% ——— 範例：災保醫療給付（含時間線/分支/文件清單）
+      A["1. 事故發生與就醫\n- 時間記錄/照片/證人"] --> B{是否已就醫？}
+      B -- 是 --> C["取得就醫/診斷證明\n(含日期、診斷碼、醫療院所章)"]
+      B -- 否 --> A2["先就醫並取得診斷/收據"] --> C
+      
+      C --> D{是否為職災？}
+      D -- 是 --> E["向雇主通報並完成職災通報流程"]
+      D -- 不確定 --> E2["諮詢勞工局/投保單位確認性質"] --> E
+      D -- 否 --> NG["不屬於本給付，改走一般健保/商保"]
+
+      E --> F["蒐集文件\n• 身分證/在保證明\n• 勞保/就保投保資料\n• 醫療單據/診斷證明\n• 事故經過佐證(班表/職務/照片)"]
+      F --> G["填寫申請書 A (個人/雇主)"]
+      G --> H["填寫申請書 B (醫療/收據彙整)"]
+      H --> I{是否已滿 30 天？}
+      I -- 未滿 --> J["送件至主管機關/勞保局\n(郵寄/臨櫃/線上)"]
+      I -- 已超過 --> J2["補充逾期原因說明\n(不可抗力/正當理由)" ] --> J
+
+      J --> K["受理與分文"] --> L["補件通知(如有)\n- 身分/醫療/事故證明"]
+      L --> M["完成補件"]
+      K --> N["審查與核定"]
+      M --> N
+      N --> O{核定結果}
+      O -- 通過 --> P["撥付醫療給付"]
+      O -- 不通過 --> Q["申覆/訴願流程\n(附理由與證據)"]
+
+      subgraph 時間線與注意事項
+        J --> T1["期限：事故起 30 天內申請(示例)" ]
+        F --> T2["文件需清晰且完整"]
+        N --> T3["審查期：依案件複雜度而定"]
+      end
+
       classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;
-      class A,B,C,D,E step
+      class A,A2,B,C,D,E,E2,F,G,H,I,J,J2,K,L,M,N,O,P,Q,T1,T2,T3,NG step
   `,
   sick: `
     flowchart TB
-      A["1. 請假與診斷/休養證明"] --> B["2. 檢附薪資與在保資料"]
-      B --> C["3. 送件到勞保局"]
-      C --> D["4. 審核與撥款"]
+      A["1. 醫師休養建議/請假"] --> B{是否影響工作所得？}
+      B -- 是 --> C["蒐集薪資與在保資料\n(近 6 個月) "]
+      B -- 否 --> NG["可能不符本項，改評估其他給付"]
+      C --> D["醫療/診斷/休養證明齊備"] --> E["填寫申請表"] --> F["送件至勞保局"]
+      F --> G["受理→補件(如有)"] --> H["審查與撥款"]
+
+      subgraph 注意
+        D --> T1["證明須含診斷與休養天數"]
+        C --> T2["薪資證明需與投保一致"]
+      end
       classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;
-      class A,B,C,D step
+      class A,B,C,D,E,F,G,H,T1,T2,NG step
   `,
   impair: `
     flowchart TB
-      A["1. 醫療穩定後"] --> B["2. 申請失能等級評估"]
-      B --> C["3. 準備身分/就保/醫療文件"]
-      C --> D["4. 送件審查"]
-      D --> E["5. 通知結果與給付"]
+      A["1. 醫療穩定"] --> B["提出失能等級評估申請"]
+      B --> C{等級是否達標？}
+      C -- 達標 --> D["蒐集身分/就保/醫療文件"] --> E["送件審查"] --> F["通知結果與給付"]
+      C -- 未達標 --> G["復健/再評估/其他資源"]
+
+      subgraph 補充
+        B --> T1["評估需附醫療證明與功能量表"]
+      end
       classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;
-      class A,B,C,D,E step
+      class A,B,C,D,E,F,G,T1 step
   `
 }
 
 const selected = ref<keyof typeof charts>('medical')
+const { chart: chartFromChat, selectedId } = useMermaidChart()
+if (selectedId.value && (selectedId.value in charts)) {
+  selected.value = selectedId.value as keyof typeof charts
+}
+const sharedChart = computed(() => chartFromChat.value || '')
 const current = computed(() => ({
   id: selected.value,
   name: eligibleList.value.find(x => x.id === selected.value)?.name ?? '災保醫療給付',
@@ -249,7 +293,7 @@ const checks = computed(() => {
 /* 中欄 */
 .center{ padding:16px; display:flex; flex-direction:column; gap:12px; }
 .flow-title{ margin:0; font-size:var(--fs-xl); font-weight:900; }
-.mmd{ overflow:auto; }
+.mmd{ overflow:auto; max-height: 70vh; }
 .chips{ display:flex; flex-wrap:wrap; gap:10px; }
 .chip{ padding:6px 12px; border-radius:8px; font-weight:800; font-size:var(--fs-sm); }
 .chip.outline{ background:#fff; border:1px solid var(--teal); color:var(--teal); }
