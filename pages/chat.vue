@@ -202,17 +202,17 @@ function goToBenefits() {
 
 /* 頂部 */
 .header {
-  width: 100vw;
-  padding: 20px;
+  width: 100%;
+  padding: 10px 20px;
 }
 
 .JobButton {
-  padding: 16px 12px;
+  padding: 12px;
 }
 
 .isIntroTitle {
   padding: 10px 2px;
-  color: #0ea5a4;
+  color: #008E73;
   font-size: 26px;
   font-weight: bolder;
 }
@@ -222,7 +222,7 @@ function goToBenefits() {
   padding: 10px 14px;
   border-radius: 999px;
   border: none;
-  background: #0ea5a4;
+  background: #008E73;
   color: #fff;
   font-weight: 600;
   cursor: default;
@@ -230,13 +230,13 @@ function goToBenefits() {
 
 /* 內容區 */
 .chat {
-  width: 100vw;
+  width: 100%;
   display: flex;
   justify-content: center;
 }
 
 .messages {
-  width: 55%;
+  width: 60%;
   padding-top: 20px;
   overflow: auto;
   height: auto;
@@ -258,7 +258,7 @@ function goToBenefits() {
 
 /* 使用者訊息（靠右） */
 .msg.user {
-  color: #0ea5a4;
+  color: #008E73;
   text-align: right;
   margin-left: auto;
 }
@@ -318,16 +318,16 @@ function goToBenefits() {
 }
 
 .btn.primary {
-  border: 1px solid #0ea5a4;
+  border: 1px solid #008E73;
   color: #ffffff;
-  background: #0ea5a4;
+  background: #008E73;
 }
 
 /* ===== 輸入列（置中→滑到底部） ===== */
 .composer {
   position: fixed;
   left: 50%;
-  width: 55vw;
+  width: 60vw;
   will-change: top, transform;
   transition: top 1000ms cubic-bezier(.22, .61, .36, 1),
     transform 1000ms cubic-bezier(.22, .61, .36, 1);
@@ -363,7 +363,7 @@ function goToBenefits() {
 }
 
 .input:focus {
-  border-color: #0ea5a4;
+  border-color: #008E73;
   box-shadow: 0 0 0 3px rgba(14, 165, 164, 0.12);
 }
 
@@ -376,7 +376,7 @@ function goToBenefits() {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: #0ea5a4;
+  background: #008E73;
   color: #fff;
   cursor: pointer;
 }

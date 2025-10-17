@@ -1,14 +1,12 @@
 <template>
   <div class="benefit-page">
     <!-- 頂部抬頭：左側兩顆白色圓角按鈕 -->
-    <header class="topbar">
-      <div class="topbar-inner">
-        <div class="top-left">
-          <NuxtLink to="/" class="top-pill">職缺資訊</NuxtLink>
-          <NuxtLink to="/" class="top-pill outline">重新諮詢</NuxtLink>
-        </div>
+    <div class="header">
+      <div class="JobButton">
+        <button class="pill">職缺資訊</button>
+        <button class="pill" style="color: #008E73; background-color: white;">重新諮詢</button>
       </div>
-    </header>
+    </div>
 
     <div class="grid">
       <!-- 左欄：白底卡片 + 綠色標題 + 選中項整塊綠底 -->
@@ -20,13 +18,8 @@
             <span>符合申請資格項目</span>
           </div>
           <ul class="left-list">
-            <li
-              v-for="b in eligibleList"
-              :key="b.id"
-              class="left-item"
-              :class="{ active: b.id === selected }"
-              @click="selected = b.id"
-            >
+            <li v-for="b in eligibleList" :key="b.id" class="left-item" :class="{ active: b.id === selected }"
+              @click="selected = b.id">
               {{ b.name }}
             </li>
           </ul>
@@ -39,11 +32,7 @@
             <span>不符合申請資格項目</span>
           </div>
           <ul class="left-list">
-            <li
-              v-for="b in notEligibleList"
-              :key="b.id"
-              class="left-item disabled"
-            >
+            <li v-for="b in notEligibleList" :key="b.id" class="left-item ">
               {{ b.name }}
             </li>
           </ul>
@@ -51,7 +40,7 @@
       </aside>
 
       <!-- 中欄：流程 -->
-      <main class="center card">
+      <main class="center ">
         <h2 class="flow-title">{{ current.name }}申請流程</h2>
         <MermaidRenderer class="mmd" :chart="sharedChart || current.chart" />
         <div class="chips">
@@ -67,10 +56,11 @@
       </main>
 
       <!-- 右欄：檢核表 -->
-      <aside class="right card">
+      <aside class="right">
         <ul class="checklist">
-          <li v-for="c in checks" :key="c.id" :class="['check', c.status]">
-            <span class="dot" />
+          <li v-for="c in checks" :key="c.id" :class="c.status" class="check">
+            <span class="left-icon ok" v-if="c.status === 'ok'">✔</span>
+            <span class="left-icon ng" v-if="c.status === 'error'"> </span>
             <span class="text">{{ c.label }}</span>
           </li>
         </ul>
@@ -175,7 +165,7 @@ const current = computed(() => ({
   chart: charts[selected.value]
 }))
 
-function toast(Data: string){
+function toast(Data: string) {
   console.log(Data)
 }
 
@@ -189,9 +179,9 @@ const checks = computed(() => {
   }
   if (current.value.id === 'sick') {
     return [
-      { id: 1, label: '醫師休養證明尚未上傳', status: 'warn' },
-      { id: 2, label: '請假證明已核章', status: 'ok' },
-      { id: 3, label: '薪資資料待核對', status: 'warn' }
+      { id: 1, label: '醫師休養證明尚缺', status: 'error' },
+      { id: 3, label: '薪資資料待核對', status: 'error' },
+      { id: 2, label: '請假證明已核章', status: 'ok' }
     ]
   }
   return [
@@ -204,114 +194,253 @@ const checks = computed(() => {
 </script>
 
 <style scoped>
-:root{
+:root {
   --fs-sm: 15px;
   --fs-md: 16.5px;
   --fs-lg: 18px;
   --fs-xl: 20px;
 
-  --teal:#0ea5a4;
-  --green:#10b981;
-  --red:#ef4444;
-  --amber:#f59e0b;
-  --slate-900:#0f172a;
-  --slate-700:#334155;
-  --slate-300:#cbd5e1;
-  --slate-200:#e5e7eb;
-  --bg:#f8fafc;
-  --white:#fff;
+  --teal: #008E73;
+  --green: #10b981;
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --slate-900: #0f172a;
+  --slate-700: #334155;
+  --slate-300: #cbd5e1;
+  --slate-200: #e5e7eb;
+  --bg: #f8fafc;
+  --white: #fff;
+}
+
+.header {
+  width: 100%;
+  padding: 10px 20px;
+  background-color: #008E73
+}
+
+.JobButton {
+  padding: 12px;
+}
+
+.isIntroTitle {
+  padding: 10px 2px;
+  color: #008E73;
+  font-size: 26px;
+  font-weight: bolder;
+}
+
+.pill {
+  width: 120px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: none;
+  background: #008E73;
+  color: #fff;
+  font-weight: 600;
+  cursor: default;
 }
 
 /* 頁面與頂欄 */
-.benefit-page{ background:var(--bg); min-height:100vh; color:var(--slate-900); }
-.topbar{ background:#0ea5a4; }
-.topbar-inner{ max-width:1200px; margin:0 auto; padding:10px 16px; }
-.top-left{ display:flex; gap:12px; }
-.top-pill{
-  display:inline-block; padding:8px 14px; border-radius:999px;
-  background:#fff; color:#0ea5a4; font-weight:800; font-size:var(--fs-md);
-  text-decoration:none; border:1px solid transparent;
+.benefit-page {
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--slate-900);
 }
-.top-pill.outline{ background:transparent; color:#fff; border-color:#fff; }
 
 /* 版心 */
-.grid{
-  max-width:1200px; margin:16px auto; padding:0 16px;
-  display:grid; gap:16px; grid-template-columns: 300px 1fr 320px;
+.grid {
+  width: 80vw;
+  margin: 16px auto;
+  padding: 0 16px;
+  display: flex;
 }
 
 /* 中/右卡片外框 */
-.card{ background:var(--white); border:1px solid var(--slate-200); border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.card {
+  background: var(--white);
+  border: 1px solid var(--slate-200);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+}
 
 /* ===== 左欄：參考圖樣式 ===== */
-.left{ display:flex; flex-direction:column; gap:12px; }
-
-.left-card{
-  background:#fff;
-  border:1px solid var(--slate-200);
-  border-radius:12px;
-  box-shadow:0 1px 3px rgba(0,0,0,.06);
-  padding:12px 10px;
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.left-title{
-  display:flex; align-items:center; gap:8px;
-  font-weight:900; font-size:18px; line-height:1;
-  margin-bottom:8px;
+.left-card {
+  background: #fff;
+  border: 1px solid var(--slate-200);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+  padding: 12px 10px;
 }
-.left-title.ok{ color:#10b981; }
-.left-title.ng{ color:#ef4444; }
 
-.left-icon{
-  width:18px; height:18px; border-radius:999px;
-  display:inline-grid; place-items:center; font-size:12px; line-height:1;
-  border:2px solid currentColor;
+.left-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 18px;
+  line-height: 1;
+  margin-bottom: 8px;
 }
-.left-icon.ok{ color:#10b981; }
-.left-icon.ng{ color:#ef4444; }
 
-.left-list{
-  list-style:none; margin:0; padding:0;
-  display:flex; flex-direction:column; gap:8px;
+.left-title.ok {
+  color: #10b981;
 }
-.left-item{
-  padding:10px 12px;
-  border-radius:4px;              /* 方角 */
-  font-weight:800; font-size:16.5px;
-  color:#6b7280;                  /* 未選灰字 */
-  cursor:pointer;
-  transition:background .15s ease, color .15s ease;
+
+.left-title.ng {
+  color: #ef4444;
 }
-.left-item.active{
-  background:#0a8f6f;            /* 選中整塊綠底 */
-  color:#fff;
+
+.left-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  line-height: 1;
+  border: 2px solid currentColor;
 }
-.left-item.disabled{
-  opacity:.55; cursor:not-allowed;
+
+.left-icon.ok {
+  color: #10b981;
+}
+
+.left-icon.ng {
+  color: #ef4444;
+}
+
+.left-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.left-item {
+  padding: 10px 12px;
+  border-radius: 4px;
+  /* 方角 */
+  font-weight: 800;
+  font-size: 18px;
+  color: #6b7280;
+  /* 未選灰字 */
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+
+.left-item.active {
+  background: #0a8f6f;
+  /* 選中整塊綠底 */
+  color: #fff;
+}
+
+.left-item.disabled {
+  opacity: .55;
+  cursor: not-allowed;
 }
 
 /* 中欄 */
-.center{ padding:16px; display:flex; flex-direction:column; gap:12px; }
-.flow-title{ margin:0; font-size:var(--fs-xl); font-weight:900; }
-.mmd{ overflow:auto; max-height: 70vh; }
-.chips{ display:flex; flex-wrap:wrap; gap:10px; }
-.chip{ padding:6px 12px; border-radius:8px; font-weight:800; font-size:var(--fs-sm); }
-.chip.outline{ background:#fff; border:1px solid var(--teal); color:var(--teal); }
+.center {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.flow-title {
+  margin: 0;
+  font-size: var(--fs-xl);
+  font-weight: 900;
+}
+
+.mmd {
+  overflow: auto;
+  max-height: 70vh;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: var(--fs-sm);
+}
+
+.chip.outline {
+  background: #fff;
+  border: 1px solid var(--teal);
+  color: var(--teal);
+}
 
 /* 右欄：檢核表 */
-.right{ padding:16px; }
-.checklist{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px; }
-.check{
-  display:flex; align-items:center; gap:10px;
-  padding:10px 12px; border-radius:999px; font-weight:900; font-size:var(--fs-md);
-  border:2px solid currentColor; background:#fff;
+.right {
+  padding: 16px;
 }
-.check .dot{ width:12px; height:12px; border-radius:999px; background:#fff; border:2px solid currentColor; }
-.check.ok{ color:var(--green); }
-.check.warn{ color:var(--amber); }
-.check.error{ color:var(--red); }
-.text{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-weight: bold;
+  border: 2px solid currentColor;
+  font-size: 18px;
+  background: #fff;
+}
+
+.check .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid currentColor;
+}
+
+.check.ok {
+  color: #10b981;
+}
+
+.check.warn {
+  color: #f59e0b;
+}
+
+.check.error {
+  color: #ef4444;
+}
+
+.text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* RWD */
-@media (max-width:1100px){ .grid{ grid-template-columns:1fr; } }
+@media (max-width:1100px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
