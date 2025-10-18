@@ -43,6 +43,7 @@
       <main class="center ">
         <h2 class="flow-title">{{ current.name }}申請流程</h2>
         <MermaidRenderer class="mmd" :chart="sharedChart || current.chart" />
+        <button @click="open = true">編輯文件資訊</button>
         <div class="chips">
           <button class="chip outline" @click="toast('取得最近可申請機構資訊')">
             取得最近可申請機構資訊
@@ -66,6 +67,20 @@
         </ul>
       </aside>
     </div>
+
+    <Teleport to="body">
+      <div v-if="open" class="modal-root">
+        <!-- 遮罩 -->
+        <div class="modal-backdrop" @click="open = false"></div>
+
+        <!-- 面板 -->
+        <div class="modal-panel">
+          <h3 style="margin:0 0 8px">最簡單彈窗</h3>
+          <p>這裡是內容。</p>
+          <button class="modal-close" @click="open = false">關閉</button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -75,7 +90,7 @@ import MermaidRenderer from '~/components/MermaidRenderer.vue'
 import { useMermaidChart } from '~/composables/useMermaidChart'
 
 type Item = { id: string; name: string }
-
+const open = ref(false)
 const eligibleList = ref<Item[]>([
   { id: 'medical', name: '災保醫療給付' },
   { id: 'sick', name: '災保傷病給付及照護補助' },
@@ -152,7 +167,36 @@ const charts: Record<string, string> = {
       class A,B,C,D,E,F,G,T1 step
   `
 }
-
+const Document = computed(() => [
+  {
+    current: 'medical',//補助項目
+    documents: [
+      [//第一份文件
+        {//第一個欄位
+          caption: '姓名',//說明
+          type: 'text',//編輯型態
+          value: '阿霈'//內容
+        },
+        {
+          caption: '是否申請',
+          type: 'checkbox',
+          value: true
+        }
+      ],
+      [//第二份文件
+        {
+          name: '座號',
+          type: 'number',
+          value: '阿丞'
+        },
+        {
+          caption: '生日',
+          type: 'date',
+          value: ''
+        }
+      ]],
+  },
+]);
 const selected = ref<keyof typeof charts>('medical')
 const { chart: chartFromChat, selectedId } = useMermaidChart()
 if (selectedId.value && (selectedId.value in charts)) {
@@ -435,6 +479,47 @@ const checks = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+
+/* 彈窗 */
+.modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, .5);
+}
+
+.modal-panel {
+  position: relative;
+  z-index: 1;
+  width: 360px;
+  max-width: 90vw;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+}
+
+.modal-close {
+  margin-top: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #f7f7f7;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  background: #eee;
 }
 
 /* RWD */
