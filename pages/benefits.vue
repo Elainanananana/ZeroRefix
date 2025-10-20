@@ -58,12 +58,12 @@
           </div>
         </div>
         
-        <div class="chips">
-          <button class="chip outline" @click="toast('取得最近可申請機構資訊')">
-            取得最近可申請機構資訊
+        <div class="institution-buttons">
+          <button class="institution-btn" @click="showApplicationInstitutions()">
+            🏢 取得最近可申請機構資訊
           </button>
-          <button class="chip outline" @click="toast('取得最近繳交機構資訊')">
-            取得最近繳交機構資訊
+          <button class="institution-btn" @click="showSubmissionInstitutions()">
+            📮 取得最近繳交機構資訊
           </button>
         </div>
       </main>
@@ -109,6 +109,55 @@
           
           <div class="modal-footer">
             <button class="btn primary" @click="selectedDocument = null">知道了</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 機構資訊模態框 -->
+    <Teleport to="body">
+      <div v-if="institutionModal" class="modal-root">
+        <!-- 遮罩 -->
+        <div class="modal-backdrop" @click="institutionModal = null"></div>
+
+        <!-- 面板 -->
+        <div class="modal-panel institution-modal">
+          <div class="modal-header">
+            <h3 style="margin:0">{{ institutionModal.title }}</h3>
+            <button class="close-btn" @click="institutionModal = null">✕</button>
+          </div>
+          
+          <div class="modal-content">
+            <div class="institution-list">
+              <div v-for="institution in institutionModal.institutions" :key="institution.name" class="institution-item">
+                <div class="institution-info">
+                  <h4>{{ institution.name }}</h4>
+                  <p class="address">📍 {{ institution.address }}</p>
+                  <p class="phone">📞 {{ institution.phone }}</p>
+                  <p class="hours">🕒 {{ institution.hours }}</p>
+                  <p class="distance">🚶‍♂️ 距離約 {{ institution.distance }}</p>
+                </div>
+                <div class="institution-actions">
+                  <a 
+                    :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(institution.address)}`"
+                    target="_blank"
+                    class="btn map-btn"
+                  >
+                    🗺️ 開啟地圖
+                  </a>
+                  <a 
+                    :href="`tel:${institution.phone}`"
+                    class="btn call-btn"
+                  >
+                    📞 撥打電話
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="modal-footer">
+            <button class="btn primary" @click="institutionModal = null">關閉</button>
           </div>
         </div>
       </div>
@@ -245,6 +294,9 @@ const documentDetails = computed(() => {
 // 選中的文件詳細資訊
 const selectedDocument = ref(null)
 
+// 機構資訊模態框
+const institutionModal = ref(null)
+
 const current = computed(() => ({
   id: selected.value,
   name: eligibleList.value.find(x => x.id === selected.value)?.name ?? '災保醫療給付',
@@ -257,6 +309,70 @@ function toast(Data: string) {
 
 function showDocumentModal(doc) {
   selectedDocument.value = doc.details
+}
+
+// 申請機構資料
+const applicationInstitutions = [
+  {
+    name: '勞動部勞工保險局台北市辦事處',
+    address: '台北市中正區羅斯福路一段4號',
+    phone: '02-2396-1266',
+    hours: '週一至週五 08:30-17:30',
+    distance: '500公尺'
+  },
+  {
+    name: '台北市勞動檢查處',
+    address: '台北市中山區松江路65號',
+    phone: '02-2596-9858',
+    hours: '週一至週五 08:30-17:30',
+    distance: '800公尺'
+  },
+  {
+    name: '台北市政府勞動局',
+    address: '台北市信義區市府路1號',
+    phone: '02-2728-8889',
+    hours: '週一至週五 08:30-17:30',
+    distance: '1.2公里'
+  }
+]
+
+// 繳交機構資料
+const submissionInstitutions = [
+  {
+    name: '勞動部勞工保險局台北市辦事處',
+    address: '台北市中正區羅斯福路一段4號',
+    phone: '02-2396-1266',
+    hours: '週一至週五 08:30-17:30',
+    distance: '500公尺'
+  },
+  {
+    name: '中華郵政台北郵局',
+    address: '台北市中正區忠孝西路一段114號',
+    phone: '02-2381-2131',
+    hours: '週一至週五 08:30-17:30',
+    distance: '600公尺'
+  },
+  {
+    name: '台北車站郵局',
+    address: '台北市中正區北平西路3號',
+    phone: '02-2381-2131',
+    hours: '週一至週五 08:30-17:30',
+    distance: '700公尺'
+  }
+]
+
+function showApplicationInstitutions() {
+  institutionModal.value = {
+    title: '附近可申請機構',
+    institutions: applicationInstitutions
+  }
+}
+
+function showSubmissionInstitutions() {
+  institutionModal.value = {
+    title: '附近可繳交機構',
+    institutions: submissionInstitutions
+  }
 }
 
 const checks = computed(() => {
@@ -607,6 +723,31 @@ const checks = computed(() => {
   transform: translateY(-1px);
 }
 
+/* 機構按鈕樣式 */
+.institution-buttons {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.institution-btn {
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.institution-btn:hover {
+  background: #f1f5f9;
+  border-color: #0ea5e9;
+  transform: translateY(-1px);
+}
+
 /* 模態框樣式 */
 .modal-root {
   position: fixed;
@@ -745,6 +886,88 @@ const checks = computed(() => {
   background: #0284c7;
 }
 
+/* 機構資訊模態框樣式 */
+.institution-modal {
+  max-width: 700px;
+  width: 95%;
+}
+
+.institution-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.institution-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  gap: 16px;
+}
+
+.institution-info {
+  flex: 1;
+}
+
+.institution-info h4 {
+  margin: 0 0 8px 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.institution-info p {
+  margin: 4px 0;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.institution-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.map-btn, .call-btn {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.map-btn {
+  background: #0ea5e9;
+  color: white;
+  border: 1px solid #0ea5e9;
+}
+
+.map-btn:hover {
+  background: #0284c7;
+  border-color: #0284c7;
+}
+
+.call-btn {
+  background: #ffffff;
+  color: #059669;
+  border: 1px solid #059669;
+}
+
+.call-btn:hover {
+  background: #f0fdf4;
+  color: #047857;
+  border-color: #047857;
+}
+
 /* RWD */
 @media (max-width:1100px) {
   .grid {
@@ -752,6 +975,21 @@ const checks = computed(() => {
   }
   .document-grid {
     grid-template-columns: 1fr;
+  }
+  .institution-buttons {
+    grid-template-columns: 1fr;
+  }
+  .institution-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .institution-actions {
+    flex-direction: row;
+    min-width: auto;
+    gap: 8px;
+  }
+  .map-btn, .call-btn {
+    flex: 1;
   }
 }
 </style>
