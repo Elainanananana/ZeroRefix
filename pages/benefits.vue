@@ -43,13 +43,25 @@
       <main class="center ">
         <h2 class="flow-title">{{ current.name }}申請流程</h2>
         <MermaidRenderer class="mmd" :chart="sharedChart || current.chart" />
-        <button @click="open = true">編輯文件資訊</button>
+        <!-- 文件詳細資訊區域 -->
+        <div v-if="documentDetails" class="document-section">
+          <h3>所需文件詳細說明</h3>
+          <div class="document-grid">
+            <button 
+              v-for="doc in documentDetails" 
+              :key="doc.name"
+              class="document-btn"
+              @click="showDocumentModal(doc)"
+            >
+              📄 {{ doc.name }}
+            </button>
+          </div>
+        </div>
+        
         <div class="chips">
           <button class="chip outline" @click="toast('取得最近可申請機構資訊')">
             取得最近可申請機構資訊
           </button>
-          <button class="chip outline" @click="toast('檢視 A 文件')">檢視</button>
-          <button class="chip outline" @click="toast('檢視 B 文件')">檢視</button>
           <button class="chip outline" @click="toast('取得最近繳交機構資訊')">
             取得最近繳交機構資訊
           </button>
@@ -68,16 +80,36 @@
       </aside>
     </div>
 
+    <!-- 文件詳細資訊模態框 -->
     <Teleport to="body">
-      <div v-if="open" class="modal-root">
+      <div v-if="selectedDocument" class="modal-root">
         <!-- 遮罩 -->
-        <div class="modal-backdrop" @click="open = false"></div>
+        <div class="modal-backdrop" @click="selectedDocument = null"></div>
 
         <!-- 面板 -->
         <div class="modal-panel">
-          <h3 style="margin:0 0 8px">最簡單彈窗</h3>
-          <p>這裡是內容。</p>
-          <button class="modal-close" @click="open = false">關閉</button>
+          <div class="modal-header">
+            <h3 style="margin:0">{{ selectedDocument.title }}</h3>
+            <button class="close-btn" @click="selectedDocument = null">✕</button>
+          </div>
+          
+          <div class="modal-content">
+            <p class="description">{{ selectedDocument.description }}</p>
+            
+            <h4>如何取得：</h4>
+            <ul class="how-to-get">
+              <li v-for="step in selectedDocument.howToGet" :key="step">{{ step }}</li>
+            </ul>
+            
+            <div class="tips">
+              <strong>💡 小提醒：</strong>
+              <p>{{ selectedDocument.tips }}</p>
+            </div>
+          </div>
+          
+          <div class="modal-footer">
+            <button class="btn primary" @click="selectedDocument = null">知道了</button>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -198,11 +230,21 @@ const Document = computed(() => [
   },
 ]);
 const selected = ref<keyof typeof charts>('medical')
-const { chart: chartFromChat, selectedId } = useMermaidChart()
+const { chart: chartFromChat, selectedId, meta } = useMermaidChart()
 if (selectedId.value && (selectedId.value in charts)) {
   selected.value = selectedId.value as keyof typeof charts
 }
 const sharedChart = computed(() => chartFromChat.value || '')
+
+// 從聊天頁面傳來的文件詳細資訊
+const documentDetails = computed(() => {
+  const metaData = meta.value as any
+  return metaData?.eligibleBenefits?.[0]?.documents || null
+})
+
+// 選中的文件詳細資訊
+const selectedDocument = ref(null)
+
 const current = computed(() => ({
   id: selected.value,
   name: eligibleList.value.find(x => x.id === selected.value)?.name ?? '災保醫療給付',
@@ -211,6 +253,10 @@ const current = computed(() => ({
 
 function toast(Data: string) {
   console.log(Data)
+}
+
+function showDocumentModal(doc) {
+  selectedDocument.value = doc.details
 }
 
 const checks = computed(() => {
@@ -522,9 +568,189 @@ const checks = computed(() => {
   background: #eee;
 }
 
+/* 文件詳細資訊區域 */
+.document-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.document-section h3 {
+  margin: 0 0 12px 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.document-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.document-btn {
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.document-btn:hover {
+  background: #f1f5f9;
+  border-color: #0ea5e9;
+  transform: translateY(-1px);
+}
+
+/* 模態框樣式 */
+.modal-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-panel {
+  position: relative;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  background: #f3f4f6;
+}
+
+.modal-content {
+  padding: 24px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.description {
+  color: #374151;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.modal-content h4 {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 16px 0 8px 0;
+}
+
+.how-to-get {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px 0;
+}
+
+.how-to-get li {
+  padding: 6px 0;
+  color: #374151;
+  position: relative;
+  padding-left: 20px;
+}
+
+.how-to-get li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #10b981;
+  font-weight: bold;
+}
+
+.tips {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 16px;
+}
+
+.tips strong {
+  color: #92400e;
+}
+
+.tips p {
+  color: #92400e;
+  margin: 4px 0 0 0;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  text-align: right;
+}
+
+.btn.primary {
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn.primary:hover {
+  background: #0284c7;
+}
+
 /* RWD */
 @media (max-width:1100px) {
   .grid {
+    grid-template-columns: 1fr;
+  }
+  .document-grid {
     grid-template-columns: 1fr;
   }
 }

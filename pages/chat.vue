@@ -134,10 +134,20 @@ function queueTypingAndReply(text, isFinal = false, done) {
       isFinal
     }
     if (isFinal) {
-      // 只記錄使用者選擇的申辦類型（示例先固定 medical，可依對話解析）
-      setSelected('medical')
-      // 若你仍想在某些情況覆蓋圖，保留 setChart；否則可不設定，將沿用 benefits.vue 內完整圖
-      setChart('', { generatedAt: Date.now() })
+      // 根據對話內容生成實用的流程圖
+      const chart = buildMermaidChart(messages.value)
+      const eligibleBenefits = analyzeEligibleBenefits(messages.value)
+      
+      // 設定第一個符合的項目為預設選中
+      if (eligibleBenefits.length > 0) {
+        setSelected(eligibleBenefits[0].id)
+      }
+      
+      // 設定動態生成的流程圖
+      setChart(chart, { 
+        generatedAt: Date.now(),
+        eligibleBenefits: eligibleBenefits
+      })
     }
     nextTick().then(scrollToBottom)
     if (done) setTimeout(done, 240) // 段落間微停頓
@@ -160,32 +170,356 @@ function scrollToBottom() {
   })
 }
 
-// 依對話內容產生 Mermaid 圖（示範版，可替換為你的規則引擎）
-function buildMermaidChart(history) {
-  // 擷取關鍵資訊（此處示範僅取用者第一則與系統最後結論）
-  const firstUser = history.find(m => m.role === 'user')?.content || '描述職災'
-  // 期限示例，可依實際規則動態計算
-  const deadline = '30 天內提出申請'
+// 文件詳細資訊
+const documentDetails = {
+  '就醫證明': {
+    title: '就醫證明',
+    description: '證明您因職災前往醫療院所就醫的證明文件',
+    howToGet: [
+      '向就診的醫療院所申請',
+      '通常需要提供身分證、健保卡',
+      '費用約 100-200 元',
+      '當天或隔天即可取得'
+    ],
+    tips: '建議在就醫當天就申請，避免後續遺失'
+  },
+  '診斷證明書': {
+    title: '診斷證明書',
+    description: '醫師開立的正式診斷證明，載明傷病情況',
+    howToGet: [
+      '向主治醫師申請',
+      '需要詳細說明診斷結果',
+      '費用約 200-500 元',
+      '通常需要 1-3 個工作天'
+    ],
+    tips: '請醫師明確註記「職業災害」相關字樣'
+  },
+  '醫療收據': {
+    title: '醫療收據',
+    description: '所有相關醫療費用的收據或發票',
+    howToGet: [
+      '保留所有醫療費用收據',
+      '包括掛號費、藥費、檢查費等',
+      '確認收據上有醫療院所名稱',
+      '影印備份避免遺失'
+    ],
+    tips: '建議用信封分類整理，方便後續申請'
+  },
+  '身分證影本': {
+    title: '身分證影本',
+    description: '申請人身分證正反面影本',
+    howToGet: [
+      '至便利商店或影印店影印',
+      '確保影本清晰可讀',
+      '正反面都要影印',
+      '費用約 2-5 元'
+    ],
+    tips: '可多印幾份備用，其他申請也會用到'
+  },
+  '勞保投保資料': {
+    title: '勞保投保資料',
+    description: '證明您在職災發生時有勞保投保的資料',
+    howToGet: [
+      '向雇主或人資部門申請',
+      '或至勞保局臨櫃查詢',
+      '也可使用自然人憑證線上查詢',
+      '通常當天即可取得'
+    ],
+    tips: '確認投保資料上的投保日期包含職災發生日'
+  },
+  '醫師診斷證明': {
+    title: '醫師診斷證明',
+    description: '醫師開立的休養建議證明',
+    howToGet: [
+      '向醫師申請休養證明',
+      '說明需要請假的天數',
+      '費用約 200-300 元',
+      '當天或隔天可取得'
+    ],
+    tips: '請醫師明確註記建議休養的天數'
+  },
+  '休養證明': {
+    title: '休養證明',
+    description: '醫師建議休養的證明文件',
+    howToGet: [
+      '向醫師申請',
+      '說明無法工作的原因',
+      '包含建議休養期間',
+      '費用約 200-500 元'
+    ],
+    tips: '如需要延長休養，記得重新申請證明'
+  },
+  '薪資證明': {
+    title: '薪資證明',
+    description: '證明您薪資水準的資料',
+    howToGet: [
+      '向雇主申請薪資證明',
+      '包含近 6 個月薪資',
+      '或提供薪資條影本',
+      '通常當天可取得'
+    ],
+    tips: '確認薪資證明與實際投保薪資一致'
+  },
+  '請假證明': {
+    title: '請假證明',
+    description: '向雇主請假的證明文件',
+    howToGet: [
+      '填寫公司請假單',
+      '附上醫師診斷證明',
+      '經主管核准',
+      '保留核准後的請假單'
+    ],
+    tips: '請假單要明確註記「職業災害」'
+  },
+  '失能診斷書': {
+    title: '失能診斷書',
+    description: '醫師評估失能程度的診斷證明',
+    howToGet: [
+      '向專科醫師申請',
+      '需要詳細功能評估',
+      '費用約 500-1000 元',
+      '通常需要 3-7 個工作天'
+    ],
+    tips: '建議找有失能評估經驗的醫師'
+  },
+  '功能評估報告': {
+    title: '功能評估報告',
+    description: '專業評估失能功能的詳細報告',
+    howToGet: [
+      '至醫院復健科申請',
+      '進行專業功能評估',
+      '費用約 1000-2000 元',
+      '通常需要 1-2 週'
+    ],
+    tips: '評估報告是失能給付的重要依據'
+  },
+  '醫療歷程': {
+    title: '醫療歷程',
+    description: '完整的醫療治療記錄',
+    howToGet: [
+      '向各就診醫院申請',
+      '包含急診、門診、住院記錄',
+      '費用依醫院規定',
+      '通常需要 3-5 個工作天'
+    ],
+    tips: '建議按時間順序整理醫療記錄'
+  }
+}
 
-  return `flowchart TB
-    A["了解情況：${firstUser}"] --> B["蒐集就醫/診斷證明"]
-    B --> C["檢附投保/薪資等文件"]
-    C --> D["向主管機關/勞保局送件"]
-    D --> E["等待審查與結果"]
-    E --> F["若通過：撥付給付"]
-    subgraph 時間線與注意事項
-      D --> G["期限：${deadline}"]
-      B --> H["文件需齊全且清晰"]
-    end
-    classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;
-    class A,B,C,D,E,F,G,H step
-  `
+// 根據對話內容分析符合的申請項目
+function analyzeEligibleBenefits(history) {
+  const userMessages = history.filter(m => m.role === 'user').map(m => m.content.toLowerCase())
+  const allText = userMessages.join(' ')
+  
+  const benefits = []
+  
+  // 分析是否符合各項申請條件
+  if (allText.includes('燙傷') || allText.includes('受傷') || allText.includes('醫療')) {
+    benefits.push({
+      id: 'medical',
+      name: '災保醫療給付',
+      deadline: '事故發生後 30 天內',
+      documents: [
+        { name: '就醫證明', details: documentDetails['就醫證明'] },
+        { name: '診斷證明書', details: documentDetails['診斷證明書'] },
+        { name: '醫療收據', details: documentDetails['醫療收據'] },
+        { name: '身分證影本', details: documentDetails['身分證影本'] },
+        { name: '勞保投保資料', details: documentDetails['勞保投保資料'] }
+      ],
+      steps: [
+        '向雇主通報職災',
+        '取得醫療證明文件',
+        '填寫申請書',
+        '送件至勞保局',
+        '等待審核結果'
+      ]
+    })
+  }
+  
+  if (allText.includes('請假') || allText.includes('休養') || allText.includes('無法工作')) {
+    benefits.push({
+      id: 'sick',
+      name: '災保傷病給付及照護補助',
+      deadline: '請假開始後 30 天內',
+      documents: [
+        { name: '醫師診斷證明', details: documentDetails['醫師診斷證明'] },
+        { name: '休養證明', details: documentDetails['休養證明'] },
+        { name: '薪資證明', details: documentDetails['薪資證明'] },
+        { name: '請假證明', details: documentDetails['請假證明'] },
+        { name: '勞保投保資料', details: documentDetails['勞保投保資料'] }
+      ],
+      steps: [
+        '取得醫師休養證明',
+        '向雇主請假',
+        '準備薪資證明',
+        '填寫申請書',
+        '送件申請'
+      ]
+    })
+  }
+  
+  if (allText.includes('失能') || allText.includes('永久') || allText.includes('功能受損')) {
+    benefits.push({
+      id: 'impair',
+      name: '災保失能給付及照護補助',
+      deadline: '醫療穩定後 2 年內',
+      documents: [
+        { name: '失能診斷書', details: documentDetails['失能診斷書'] },
+        { name: '功能評估報告', details: documentDetails['功能評估報告'] },
+        { name: '身分證影本', details: documentDetails['身分證影本'] },
+        { name: '勞保投保資料', details: documentDetails['勞保投保資料'] },
+        { name: '醫療歷程', details: documentDetails['醫療歷程'] }
+      ],
+      steps: [
+        '醫療穩定後申請失能評估',
+        '取得失能等級證明',
+        '準備相關醫療文件',
+        '填寫申請書',
+        '送件審查'
+      ]
+    })
+  }
+  
+  return benefits.length > 0 ? benefits : [{
+    id: 'medical',
+    name: '災保醫療給付',
+    deadline: '事故發生後 30 天內',
+    documents: [
+      { name: '就醫證明', details: documentDetails['就醫證明'] },
+      { name: '診斷證明書', details: documentDetails['診斷證明書'] },
+      { name: '醫療收據', details: documentDetails['醫療收據'] },
+      { name: '身分證影本', details: documentDetails['身分證影本'] },
+      { name: '勞保投保資料', details: documentDetails['勞保投保資料'] }
+    ],
+    steps: [
+      '向雇主通報職災',
+      '取得醫療證明文件',
+      '填寫申請書',
+      '送件至勞保局',
+      '等待審核結果'
+    ]
+  }]
+}
+
+// 計算具體日期
+function calculateDates(baseDate = new Date()) {
+  const today = new Date(baseDate)
+  const formatDate = (date) => {
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${month}/${day}`
+  }
+  
+  return {
+    day1: formatDate(new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000)), // 明天
+    day3: formatDate(new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000)), // 3天後
+    day7: formatDate(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)), // 7天後
+    day14: formatDate(new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000)), // 14天後
+    day21: formatDate(new Date(today.getTime() + 21 * 24 * 60 * 60 * 1000)), // 21天後
+    day30: formatDate(new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)), // 30天後
+    day45: formatDate(new Date(today.getTime() + 45 * 24 * 60 * 60 * 1000)), // 45天後
+  }
+}
+
+// 根據對話內容產生實用的申請流程圖
+function buildMermaidChart(history) {
+  const eligibleBenefits = analyzeEligibleBenefits(history)
+  const dates = calculateDates()
+  
+  if (eligibleBenefits.length === 0) {
+    return `flowchart TB
+      A["根據您的描述"] --> B["建議諮詢勞保局\n確認申請資格"]
+      classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;
+      class A,B step
+    `
+  }
+  
+  let flowchart = 'flowchart TB\n'
+  
+  // 根據符合的項目數量決定版面
+  if (eligibleBenefits.length === 1) {
+    const benefit = eligibleBenefits[0]
+    flowchart += `  A["您符合申請資格"] --> B["${benefit.name}"]\n`
+    
+    // 申請流程（加入時間戳記）
+    const stepWithTime = [
+      `立即行動：向雇主通報職災`,
+      `${dates.day3}前：取得醫療證明文件`,
+      `${dates.day7}前：填寫申請書`,
+      `${dates.day21}前：送件至勞保局`,
+      `${dates.day45}前：等待審核結果`
+    ]
+    
+    stepWithTime.forEach((step, index) => {
+      const stepId = String.fromCharCode(66 + index + 1) // B, C, D, E...
+      if (index === stepWithTime.length - 1) {
+        // 最後一步不連箭頭
+        flowchart += `  ${String.fromCharCode(66 + index)}["${step}"]\n`
+        flowchart += `  F["完成申請"]\n`
+      } else {
+        flowchart += `  ${String.fromCharCode(66 + index)}["${step}"] --> ${stepId}["${stepWithTime[index + 1]}"]\n`
+      }
+    })
+    
+    // 重要時限提醒
+    flowchart += `  subgraph 重要時限\n`
+    flowchart += `    TIME["⏰ ${benefit.deadline}"]\n`
+    flowchart += `    DEADLINE["🚨 ${dates.day30}前必須完成所有申請"]\n`
+    flowchart += `  end\n`
+    
+  } else {
+    // 多個申請項目
+    flowchart += `  A["您符合多項申請資格"]\n`
+    
+    eligibleBenefits.forEach((benefit, index) => {
+      const benefitId = `B${index}`
+      flowchart += `  A --> ${benefitId}["${benefit.name}"]\n`
+      
+      // 每個項目的前三個步驟（含時間）
+      const timeSteps = [
+        `立即：${benefit.steps[0]}`,
+        `${dates.day3}前：${benefit.steps[1]}`,
+        `${dates.day7}前：${benefit.steps[2]}`
+      ]
+      
+      timeSteps.forEach((step, stepIndex) => {
+        const stepId = `${benefitId}${stepIndex + 1}`
+        flowchart += `  ${benefitId} --> ${stepId}["${step}"]\n`
+      })
+    })
+    
+    // 時限提醒
+    flowchart += `  subgraph 各項申請時限\n`
+    eligibleBenefits.forEach((benefit, index) => {
+      flowchart += `    T${index}["${benefit.name}\\n⏰ ${benefit.deadline}"]\n`
+    })
+    flowchart += `  end\n`
+  }
+  
+  flowchart += `  classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;\n`
+  flowchart += `  classDef deadline fill:#fff7ed,stroke:#f59e0b,stroke-width:2px,color:#92400e,rx:6,ry:6;\n`
+  flowchart += `  classDef documents fill:#f0f9ff,stroke:#0ea5e9,stroke-width:1px,color:#0c4a6e,rx:6,ry:6;\n`
+  
+  return flowchart
 }
 
 function goToBenefits() {
-  // 若尚未產出圖，保底再生成一次
-  setSelected('medical')
-  setChart('', { triggeredBy: 'button' })
+  // 根據對話內容生成實用的流程圖
+  const chart = buildMermaidChart(messages.value)
+  const eligibleBenefits = analyzeEligibleBenefits(messages.value)
+  
+  // 設定第一個符合的項目為預設選中
+  if (eligibleBenefits.length > 0) {
+    setSelected(eligibleBenefits[0].id)
+  }
+  
+  // 設定動態生成的流程圖
+  setChart(chart, { 
+    triggeredBy: 'button',
+    eligibleBenefits: eligibleBenefits,
+    generatedAt: Date.now()
+  })
+  
   router.push('/benefits')
 }
 </script>
