@@ -62,9 +62,14 @@ const { setChart, setSelected } = useMermaidChart()
 
 // 三段腳本，逐步等使用者回覆才送下一段
 const scriptedReplies = [
-  '了解，這可能符合職業災害的情況，我會進一步協助您確認申請資格並準備後續資料。\n首先，請問這起燙傷事件是幾點幾分發生的呢？',
-  '好的，您是在昨天9/15號下午兩點半發生燙傷\n請問您事發後是否有前往就醫？若有的話，是去哪一間醫院？是否有拿到診斷證明呢？',
-  '太好了，那您基本符合職災補助申請資格！\n我會根據您提供的資訊，產生預填文件與申請流程圖，並整理需要準備的文件與注意事項給您。'
+  '請問您是什麼時候受傷的呢？',
+  '好的，10月10號受傷的，\n\n請問這段期間公司有照常發薪水嗎？還是只有部分薪？\n另外您計畫約什麼時候復工呢？',
+  '了解，您在受傷期間是取得部分薪資，並且已經10月20號復工，\n\n請問你事後有前往就醫取得診斷證明嗎?有住院嗎?',
+  '收到，已取得診斷證明，並且有住院，\n\n請問住院時醫生是否評估在住院期間無法自理呢?',
+  '太好了，這樣可以一併申請住院照護補助，\n\n另外想請您補充一下當時的工作內容是什麼、受傷的地點大概在哪裡、以及發生的時間？',
+  '了解，您是在倉庫理貨、上架、包裝、搬運，在倉庫A區走道受傷，時間是早上10點，\n\n請問是怎麼受傷的呢?',
+  '請問發生的地址是在那裡呢?是處於公出的情況嗎?\n並且在發生當下是否接觸化學物質?',
+  '太好了，那您基本符合職災補助申請資格！\n我會根據您提供的資訊，產生預填文件與申請流程圖，\n並整理需要準備的文件與注意事項給您。'
 ]
 const isBusy = computed(() => messages.value.some(m => m.typing))
 const canSend = computed(() => !isBusy.value && draft.value.trim().length)
@@ -137,14 +142,14 @@ function queueTypingAndReply(text, isFinal = false, done) {
       // 根據對話內容生成實用的流程圖
       const chart = buildMermaidChart(messages.value)
       const eligibleBenefits = analyzeEligibleBenefits(messages.value)
-      
+
       // 設定第一個符合的項目為預設選中
       if (eligibleBenefits.length > 0) {
         setSelected(eligibleBenefits[0].id)
       }
-      
+
       // 設定動態生成的流程圖
-      setChart(chart, { 
+      setChart(chart, {
         generatedAt: Date.now(),
         eligibleBenefits: eligibleBenefits
       })
@@ -310,9 +315,9 @@ const documentDetails = {
 function analyzeEligibleBenefits(history) {
   const userMessages = history.filter(m => m.role === 'user').map(m => m.content.toLowerCase())
   const allText = userMessages.join(' ')
-  
+
   const benefits = []
-  
+
   // 分析是否符合各項申請條件
   if (allText.includes('燙傷') || allText.includes('受傷') || allText.includes('醫療')) {
     benefits.push({
@@ -335,7 +340,7 @@ function analyzeEligibleBenefits(history) {
       ]
     })
   }
-  
+
   if (allText.includes('請假') || allText.includes('休養') || allText.includes('無法工作')) {
     benefits.push({
       id: 'sick',
@@ -357,7 +362,7 @@ function analyzeEligibleBenefits(history) {
       ]
     })
   }
-  
+
   if (allText.includes('失能') || allText.includes('永久') || allText.includes('功能受損')) {
     benefits.push({
       id: 'impair',
@@ -379,7 +384,7 @@ function analyzeEligibleBenefits(history) {
       ]
     })
   }
-  
+
   return benefits.length > 0 ? benefits : [{
     id: 'medical',
     name: '災保醫療給付',
@@ -409,7 +414,7 @@ function calculateDates(baseDate = new Date()) {
     const day = String(date.getDate()).padStart(2, '0')
     return `${month}/${day}`
   }
-  
+
   return {
     day1: formatDate(new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000)), // 明天
     day3: formatDate(new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000)), // 3天後
@@ -425,7 +430,7 @@ function calculateDates(baseDate = new Date()) {
 function buildMermaidChart(history) {
   const eligibleBenefits = analyzeEligibleBenefits(history)
   const dates = calculateDates()
-  
+
   if (eligibleBenefits.length === 0) {
     return `flowchart TB
       A["根據您的描述"] --> B["建議諮詢勞保局\n確認申請資格"]
@@ -433,14 +438,14 @@ function buildMermaidChart(history) {
       class A,B step
     `
   }
-  
+
   let flowchart = 'flowchart TB\n'
-  
+
   // 根據符合的項目數量決定版面
   if (eligibleBenefits.length === 1) {
     const benefit = eligibleBenefits[0]
     flowchart += `  A["您符合申請資格"] --> B["${benefit.name}"]\n`
-    
+
     // 申請流程（加入時間戳記）
     const stepWithTime = [
       `立即行動：向雇主通報職災`,
@@ -449,7 +454,7 @@ function buildMermaidChart(history) {
       `${dates.day21}前：送件至勞保局`,
       `${dates.day45}前：等待審核結果`
     ]
-    
+
     stepWithTime.forEach((step, index) => {
       const stepId = String.fromCharCode(66 + index + 1) // B, C, D, E...
       if (index === stepWithTime.length - 1) {
@@ -460,34 +465,34 @@ function buildMermaidChart(history) {
         flowchart += `  ${String.fromCharCode(66 + index)}["${step}"] --> ${stepId}["${stepWithTime[index + 1]}"]\n`
       }
     })
-    
+
     // 重要時限提醒
     flowchart += `  subgraph 重要時限\n`
     flowchart += `    TIME["⏰ ${benefit.deadline}"]\n`
     flowchart += `    DEADLINE["🚨 ${dates.day30}前必須完成所有申請"]\n`
     flowchart += `  end\n`
-    
+
   } else {
     // 多個申請項目
     flowchart += `  A["您符合多項申請資格"]\n`
-    
+
     eligibleBenefits.forEach((benefit, index) => {
       const benefitId = `B${index}`
       flowchart += `  A --> ${benefitId}["${benefit.name}"]\n`
-      
+
       // 每個項目的前三個步驟（含時間）
       const timeSteps = [
         `立即：${benefit.steps[0]}`,
         `${dates.day3}前：${benefit.steps[1]}`,
         `${dates.day7}前：${benefit.steps[2]}`
       ]
-      
+
       timeSteps.forEach((step, stepIndex) => {
         const stepId = `${benefitId}${stepIndex + 1}`
         flowchart += `  ${benefitId} --> ${stepId}["${step}"]\n`
       })
     })
-    
+
     // 時限提醒
     flowchart += `  subgraph 各項申請時限\n`
     eligibleBenefits.forEach((benefit, index) => {
@@ -495,11 +500,11 @@ function buildMermaidChart(history) {
     })
     flowchart += `  end\n`
   }
-  
+
   flowchart += `  classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;\n`
   flowchart += `  classDef deadline fill:#fff7ed,stroke:#f59e0b,stroke-width:2px,color:#92400e,rx:6,ry:6;\n`
   flowchart += `  classDef documents fill:#f0f9ff,stroke:#0ea5e9,stroke-width:1px,color:#0c4a6e,rx:6,ry:6;\n`
-  
+
   return flowchart
 }
 
@@ -507,19 +512,19 @@ function goToBenefits() {
   // 根據對話內容生成實用的流程圖
   const chart = buildMermaidChart(messages.value)
   const eligibleBenefits = analyzeEligibleBenefits(messages.value)
-  
+
   // 設定第一個符合的項目為預設選中
   if (eligibleBenefits.length > 0) {
     setSelected(eligibleBenefits[0].id)
   }
-  
+
   // 設定動態生成的流程圖
-  setChart(chart, { 
+  setChart(chart, {
     triggeredBy: 'button',
     eligibleBenefits: eligibleBenefits,
     generatedAt: Date.now()
   })
-  
+
   router.push('/benefits')
 }
 </script>
