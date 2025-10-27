@@ -68,9 +68,17 @@
                     </div>
                   </div>
 
-                  <details class="mt-4">
-                    <summary class="text-base text-gray-600 cursor-pointer hover:underline">查看詳情</summary>
-                    <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-base">
+                  <div class="mt-4">
+                    <button 
+                      class="text-base text-gray-600 cursor-pointer flex items-center gap-2"
+                      @click="toggleDetails(idx)"
+                    >
+                      <span class="transform transition-transform duration-200" :class="{ 'rotate-90': expandedDetails.has(idx) }" style="color: #0a8f6f;">
+                        ▶
+                      </span>
+                      <span>{{ expandedDetails.has(idx) ? '收起詳情' : '查看詳情' }}</span>
+                    </button>
+                    <div v-if="expandedDetails.has(idx)" class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-base">
                       <div class="rounded-xl border p-3">
                         <div class="text-gray-600 mb-1">名額</div>
                         <div class="font-medium">{{ job.count ?? '—' }}</div>
@@ -90,7 +98,7 @@
                         </div>
                       </div>
                     </div>
-                  </details>
+                  </div>
                 </div>
 
                 <div class="shrink-0 flex flex-col items-end gap-2">
@@ -181,10 +189,30 @@ const activeTag = ref<string | null>(null)
 const page = ref(1)
 const pageSize = computed(() => props.pageSize ?? 10)
 
+// 管理詳情展開狀態（只在當前頁面保持）
+const expandedDetails = ref<Set<number>>(new Set())
+
+// 切換詳情展開狀態
+function toggleDetails(index: number) {
+  if (expandedDetails.value.has(index)) {
+    expandedDetails.value.delete(index)
+  } else {
+    expandedDetails.value.add(index)
+  }
+}
+
+// 重置所有展開狀態
+function resetExpandedDetails() {
+  expandedDetails.value.clear()
+}
+
 const source = computed<JobItem[]>(() => Array.isArray(props.items) ? props.items : [])
 
 function normalizeZh(s = '') { return s.toString().replace(/\s+/g, '').normalize('NFKC').toLowerCase() }
-watch(q, () => { page.value = 1 })
+watch(q, () => { 
+  page.value = 1
+  resetExpandedDetails() // 搜尋時重置展開狀態
+})
 
 const filtered = computed(() => {
   const query = normalizeZh(q.value)
@@ -204,11 +232,21 @@ const paged = computed(() => {
   return filtered.value.slice(start, start + pageSize.value)
 })
 
-function clearSearch() { q.value = ''; activeTag.value = null; page.value = 1 }
-function toggleTag(tag: string | null) { activeTag.value = activeTag.value === tag ? null : tag; page.value = 1 }
+function clearSearch() { 
+  q.value = ''; 
+  activeTag.value = null; 
+  page.value = 1
+  resetExpandedDetails() // 清除搜尋時重置展開狀態
+}
+function toggleTag(tag: string | null) { 
+  activeTag.value = activeTag.value === tag ? null : tag; 
+  page.value = 1
+  resetExpandedDetails() // 切換標籤時重置展開狀態
+}
 function open(url?: string) { if (url) window.open(url, '_blank', 'noopener,noreferrer') }
 function goPage(n: number) {
   page.value = Math.min(Math.max(1, n), pages.value)
+  resetExpandedDetails() // 換頁時重置展開狀態
   requestAnimationFrame(() => {
     document.querySelector('.jobsboard-root')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   })
@@ -218,4 +256,9 @@ function goPage(n: number) {
 <style scoped>
 .jobsboard-root { font-size: 18px; line-height: 1.75; }
 .jobsboard-root input[type="search"], .jobsboard-root button { font-size: 16px; }
+
+/* 箭頭動畫 */
+.rotate-180 {
+  transform: rotate(180deg);
+}
 </style>
