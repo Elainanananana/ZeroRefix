@@ -47,20 +47,15 @@
         <div v-if="documentDetails" class="document-section">
           <h3>所需文件詳細說明</h3>
           <div class="document-grid">
-            <button 
-              v-for="doc in documentDetails" 
-              :key="doc.name"
-              class="document-btn"
-              @click="showDocumentModal(doc)"
-            >
+            <button v-for="doc in documentDetails" :key="doc.name" class="document-btn" @click="showDocumentModal(doc)">
               📄 {{ doc.name }}
             </button>
           </div>
         </div>
-        
+
         <div class="institution-buttons">
           <button class="institution-btn" @click="showApplicationInstitutions()">
-            🏢 取得最近可申請機構資訊
+            🏢 取得最近可就診機構資訊
           </button>
           <button class="institution-btn" @click="showSubmissionInstitutions()">
             📮 取得最近繳交機構資訊
@@ -92,21 +87,21 @@
             <h3 style="margin:0">{{ selectedDocument.title }}</h3>
             <button class="close-btn" @click="selectedDocument = null">✕</button>
           </div>
-          
+
           <div class="modal-content">
             <p class="description">{{ selectedDocument.description }}</p>
-            
+
             <h4>如何取得：</h4>
             <ul class="how-to-get">
               <li v-for="step in selectedDocument.howToGet" :key="step">{{ step }}</li>
             </ul>
-            
+
             <div class="tips">
               <strong>💡 小提醒：</strong>
               <p>{{ selectedDocument.tips }}</p>
             </div>
           </div>
-          
+
           <div class="modal-footer">
             <button class="btn primary" @click="selectedDocument = null">知道了</button>
           </div>
@@ -126,10 +121,11 @@
             <h3 style="margin:0">{{ institutionModal.title }}</h3>
             <button class="close-btn" @click="institutionModal = null">✕</button>
           </div>
-          
+
           <div class="modal-content">
             <div class="institution-list">
-              <div v-for="institution in institutionModal.institutions" :key="institution.name" class="institution-item">
+              <div v-for="institution in institutionModal.institutions" :key="institution.name"
+                class="institution-item">
                 <div class="institution-info">
                   <h4>{{ institution.name }}</h4>
                   <p class="address">📍 {{ institution.address }}</p>
@@ -138,24 +134,18 @@
                   <p class="distance">🚶‍♂️ 距離約 {{ institution.distance }}</p>
                 </div>
                 <div class="institution-actions">
-                  <a 
-                    :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(institution.address)}`"
-                    target="_blank"
-                    class="btn map-btn"
-                  >
+                  <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(institution.address)}`"
+                    target="_blank" class="btn map-btn">
                     🗺️ 開啟地圖
                   </a>
-                  <a 
-                    :href="`tel:${institution.phone}`"
-                    class="btn call-btn"
-                  >
+                  <a :href="`tel:${institution.phone}`" class="btn call-btn">
                     📞 撥打電話
                   </a>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div class="modal-footer">
             <button class="btn primary" @click="institutionModal = null">關閉</button>
           </div>
@@ -248,36 +238,6 @@ const charts: Record<string, string> = {
       class A,B,C,D,E,F,G,T1 step
   `
 }
-const Document = computed(() => [
-  {
-    current: 'medical',//補助項目
-    documents: [
-      [//第一份文件
-        {//第一個欄位
-          caption: '姓名',//說明
-          type: 'text',//編輯型態
-          value: '阿霈'//內容
-        },
-        {
-          caption: '是否申請',
-          type: 'checkbox',
-          value: true
-        }
-      ],
-      [//第二份文件
-        {
-          name: '座號',
-          type: 'number',
-          value: '阿丞'
-        },
-        {
-          caption: '生日',
-          type: 'date',
-          value: ''
-        }
-      ]],
-  },
-]);
 const selected = ref<keyof typeof charts>('medical')
 const { chart: chartFromChat, selectedId, meta } = useMermaidChart()
 if (selectedId.value && (selectedId.value in charts)) {
@@ -395,8 +355,6 @@ const checks = computed(() => {
     { id: 2, label: '身分/就保文件齊全', status: 'ok' }
   ]
 })
-
-
 </script>
 
 <style scoped>
@@ -934,7 +892,8 @@ const checks = computed(() => {
   min-width: 120px;
 }
 
-.map-btn, .call-btn {
+.map-btn,
+.call-btn {
   display: inline-block;
   padding: 8px 12px;
   border-radius: 6px;
@@ -973,22 +932,28 @@ const checks = computed(() => {
   .grid {
     grid-template-columns: 1fr;
   }
+
   .document-grid {
     grid-template-columns: 1fr;
   }
+
   .institution-buttons {
     grid-template-columns: 1fr;
   }
+
   .institution-item {
     flex-direction: column;
     align-items: stretch;
   }
+
   .institution-actions {
     flex-direction: row;
     min-width: auto;
     gap: 8px;
   }
-  .map-btn, .call-btn {
+
+  .map-btn,
+  .call-btn {
     flex: 1;
   }
 }
