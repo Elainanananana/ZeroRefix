@@ -25,5 +25,6 @@ const items = computed<JobItem[]>(() => jobsRes.value?.items ?? [])
 
 <template>
   <!-- 直接丟 items（Ref 會自動在 template 解包），或寫 items || [] 都行 -->
+   <AppHeader />
   <JobsBoard :items="items" brand-hex="#0a8f6f" />
 </template>

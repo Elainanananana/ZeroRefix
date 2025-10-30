@@ -3,7 +3,7 @@
     <!-- 頂部 -->
     <div class="header">
       <div class="JobButton">
-        <button class="pill">職缺資訊</button>
+        <NuxtLink to="/jobs" class="pill">職缺資訊</NuxtLink>
       </div>
     </div>
 
@@ -429,83 +429,18 @@ function calculateDates(baseDate = new Date()) {
 // 根據對話內容產生實用的申請流程圖
 function buildMermaidChart(history) {
   const eligibleBenefits = analyzeEligibleBenefits(history)
-  const dates = calculateDates()
 
-  if (eligibleBenefits.length === 0) {
-    return `flowchart TB
-      A["根據您的描述"] --> B["建議諮詢勞保局\n確認申請資格"]
+  // 使用與 benefits.vue 相同的四個步驟流程圖
+  return `flowchart TB
+      A["1. 就醫診斷\n至醫療院所就醫治療\n請醫師開立「傷病診斷書」\n必須載明「住院期間需人照護」"] --> B["2. 編輯與下載申請文件\n下載「傷病給付及住院照護補助申請書」"]
+      
+      B --> C["3. 補充文件資訊\n填寫個人資料\n勾選入帳帳户類型\n貼上「存簿封面影本」於申請書指定處"]
+      
+      C --> D["4. 送件審核\n整合申辦文件與傷病診斷書\n送至勞保局審核"]
+
       classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;
-      class A,B step
+      class A,B,C,D step
     `
-  }
-
-  let flowchart = 'flowchart TB\n'
-
-  // 根據符合的項目數量決定版面
-  if (eligibleBenefits.length === 1) {
-    const benefit = eligibleBenefits[0]
-    flowchart += `  A["您符合申請資格"] --> B["${benefit.name}"]\n`
-
-    // 申請流程（加入時間戳記）
-    const stepWithTime = [
-      `立即行動：向雇主通報職災`,
-      `${dates.day3}前：取得醫療證明文件`,
-      `${dates.day7}前：填寫申請書`,
-      `${dates.day21}前：送件至勞保局`,
-      `${dates.day45}前：等待審核結果`
-    ]
-
-    stepWithTime.forEach((step, index) => {
-      const stepId = String.fromCharCode(66 + index + 1) // B, C, D, E...
-      if (index === stepWithTime.length - 1) {
-        // 最後一步不連箭頭
-        flowchart += `  ${String.fromCharCode(66 + index)}["${step}"]\n`
-        flowchart += `  F["完成申請"]\n`
-      } else {
-        flowchart += `  ${String.fromCharCode(66 + index)}["${step}"] --> ${stepId}["${stepWithTime[index + 1]}"]\n`
-      }
-    })
-
-    // 重要時限提醒
-    flowchart += `  subgraph 重要時限\n`
-    flowchart += `    TIME["⏰ ${benefit.deadline}"]\n`
-    flowchart += `    DEADLINE["🚨 ${dates.day30}前必須完成所有申請"]\n`
-    flowchart += `  end\n`
-
-  } else {
-    // 多個申請項目
-    flowchart += `  A["您符合多項申請資格"]\n`
-
-    eligibleBenefits.forEach((benefit, index) => {
-      const benefitId = `B${index}`
-      flowchart += `  A --> ${benefitId}["${benefit.name}"]\n`
-
-      // 每個項目的前三個步驟（含時間）
-      const timeSteps = [
-        `立即：${benefit.steps[0]}`,
-        `${dates.day3}前：${benefit.steps[1]}`,
-        `${dates.day7}前：${benefit.steps[2]}`
-      ]
-
-      timeSteps.forEach((step, stepIndex) => {
-        const stepId = `${benefitId}${stepIndex + 1}`
-        flowchart += `  ${benefitId} --> ${stepId}["${step}"]\n`
-      })
-    })
-
-    // 時限提醒
-    flowchart += `  subgraph 各項申請時限\n`
-    eligibleBenefits.forEach((benefit, index) => {
-      flowchart += `    T${index}["${benefit.name}\\n⏰ ${benefit.deadline}"]\n`
-    })
-    flowchart += `  end\n`
-  }
-
-  flowchart += `  classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;\n`
-  flowchart += `  classDef deadline fill:#fff7ed,stroke:#f59e0b,stroke-width:2px,color:#92400e,rx:6,ry:6;\n`
-  flowchart += `  classDef documents fill:#f0f9ff,stroke:#0ea5e9,stroke-width:1px,color:#0c4a6e,rx:6,ry:6;\n`
-
-  return flowchart
 }
 
 function goToBenefits() {
@@ -557,8 +492,7 @@ function goToBenefits() {
 }
 
 .pill {
-  width: 120px;
-  padding: 10px 14px;
+  padding: 13px 28px;
   border-radius: 999px;
   border: none;
   background: #008E73;

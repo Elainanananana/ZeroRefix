@@ -3,9 +3,9 @@
     <h1>件步如飛</h1>
     <p>歡迎來到件步如飛！</p>
     <div class="links">
-      <NuxtLink to="/test" class="btn">查看測試流程圖</NuxtLink>
+      <!-- <NuxtLink to="/test" class="btn">查看測試流程圖</NuxtLink> -->
       <NuxtLink to="/chat" class="btn">進入聊天室</NuxtLink>
-      <NuxtLink to="/benefits" class="btn">美化流程圖</NuxtLink>
+      <NuxtLink to="/benefits" class="btn">流程圖</NuxtLink>
     </div>
     <div class="links">
       <NuxtLoadingIndicator />

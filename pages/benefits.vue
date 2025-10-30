@@ -3,8 +3,8 @@
     <!-- 頂部抬頭：左側兩顆白色圓角按鈕 -->
     <div class="header">
       <div class="JobButton">
-        <button class="pill">職缺資訊</button>
-        <button class="pill" style="color: #008E73; background-color: white;">重新諮詢</button>
+        <NuxtLink to="/jobs" class="pill">職缺資訊</NuxtLink>
+        <NuxtLink to="/chat" class="pill" style="color: #008E73; background-color: white;">重新諮詢</NuxtLink>
       </div>
     </div>
 
@@ -42,15 +42,26 @@
       <!-- 中欄：流程 -->
       <main class="center ">
         <h2 class="flow-title">{{ current.name }}申請流程</h2>
-        <MermaidRenderer class="mmd" :chart="sharedChart || current.chart" />
-        <!-- 文件詳細資訊區域 -->
-        <div v-if="documentDetails" class="document-section">
+        <MermaidRenderer class="mmd" :chart="displayChart" />
+
+        <div>
+          <!-- 申請文件下載區 -->
+          <button class="download-btn" @click="downloadApplicationFile()">
+            <span class="flex gap-2">
+              <img src="/download.png" alt="download" class="download-icon" width="20">
+              <p>下載 <b>{{ currentFormTitle }}</b></p>
+            </span>
+          </button>
+        </div>
+        <!-- 文件詳細資訊區域（固定顯示；內部判斷是否有清單） -->
+        <div class="document-section">
           <h3>所需文件詳細說明</h3>
-          <div class="document-grid">
+          <div v-if="documentDetails && documentDetails.length" class="document-grid">
             <button v-for="doc in documentDetails" :key="doc.name" class="document-btn" @click="showDocumentModal(doc)">
               📄 {{ doc.name }}
             </button>
           </div>
+          <p v-else class="empty-hint">尚未有文件清單</p>
         </div>
 
         <div class="institution-buttons">
@@ -163,66 +174,37 @@ import { useMermaidChart } from '~/composables/useMermaidChart'
 type Item = { id: string; name: string }
 const open = ref(false)
 const eligibleList = ref<Item[]>([
-  { id: 'medical', name: '災保醫療給付' },
+  { id: 'medical', name: '傷病給付+住院治療期間照護補助' },
   { id: 'sick', name: '災保傷病給付及照護補助' },
-  { id: 'impair', name: '災保失能給付及照護補助' }
+  // { id: 'impair', name: '災保失能給付及照護補助' }
 ])
 const notEligibleList = ref<Item[]>([
-  { id: 'x1', name: '災保傷病給付及照護補助' },
-  { id: 'x2', name: '災保失能給付及照護補助' }
+  { id: 'x1', name: '失能照護補助' },
+  { id: 'x2', name: '本人死亡給付' }
 ])
 
 const charts: Record<string, string> = {
   medical: `
     flowchart TB
-      %% ——— 範例：災保醫療給付（含時間線/分支/文件清單）
-      A["1. 事故發生與就醫\n- 時間記錄/照片/證人"] --> B{是否已就醫？}
-      B -- 是 --> C["取得就醫/診斷證明\n(含日期、診斷碼、醫療院所章)"]
-      B -- 否 --> A2["先就醫並取得診斷/收據"] --> C
+      A["1. 就醫診斷\n至醫療院所就醫治療\n請醫師開立「傷病診斷書」\n必須載明「住院期間需人照護」"] --> B["2. 編輯與下載申請文件\n下載「傷病給付及住院照護補助申請書」"]
       
-      C --> D{是否為職災？}
-      D -- 是 --> E["向雇主通報並完成職災通報流程"]
-      D -- 不確定 --> E2["諮詢勞工局/投保單位確認性質"] --> E
-      D -- 否 --> NG["不屬於本給付，改走一般健保/商保"]
-
-      E --> F["蒐集文件\n• 身分證/在保證明\n• 勞保/就保投保資料\n• 醫療單據/診斷證明\n• 事故經過佐證(班表/職務/照片)"]
-      F --> G["填寫申請書 A (個人/雇主)"]
-      G --> H["填寫申請書 B (醫療/收據彙整)"]
-      H --> I{是否已滿 30 天？}
-      I -- 未滿 --> J["送件至主管機關/勞保局\n(郵寄/臨櫃/線上)"]
-      I -- 已超過 --> J2["補充逾期原因說明\n(不可抗力/正當理由)" ] --> J
-
-      J --> K["受理與分文"] --> L["補件通知(如有)\n- 身分/醫療/事故證明"]
-      L --> M["完成補件"]
-      K --> N["審查與核定"]
-      M --> N
-      N --> O{核定結果}
-      O -- 通過 --> P["撥付醫療給付"]
-      O -- 不通過 --> Q["申覆/訴願流程\n(附理由與證據)"]
-
-      subgraph 時間線與注意事項
-        J --> T1["期限：事故起 30 天內申請(示例)" ]
-        F --> T2["文件需清晰且完整"]
-        N --> T3["審查期：依案件複雜度而定"]
-      end
+      B --> C["3. 補充文件資訊\n填寫個人資料\n勾選入帳帳户類型\n貼上「存簿封面影本」於申請書指定處"]
+      
+      C --> D["4. 送件審核\n整合申辦文件與傷病診斷書\n送至勞保局審核"]
 
       classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;
-      class A,A2,B,C,D,E,E2,F,G,H,I,J,J2,K,L,M,N,O,P,Q,T1,T2,T3,NG step
+      class A,B,C,D step
   `,
   sick: `
     flowchart TB
-      A["1. 醫師休養建議/請假"] --> B{是否影響工作所得？}
-      B -- 是 --> C["蒐集薪資與在保資料\n(近 6 個月) "]
-      B -- 否 --> NG["可能不符本項，改評估其他給付"]
-      C --> D["醫療/診斷/休養證明齊備"] --> E["填寫申請表"] --> F["送件至勞保局"]
-      F --> G["受理→補件(如有)"] --> H["審查與撥款"]
+      A["1. 編輯與下載申請文件\n下載【<b>災保傷病給付及照護補助申請書</b>】\n由投保單位確認加蓋章"] --> B["2. 準備申請所需文件\n醫師診斷書(須載明「受職業災害」及「住院期間需人照護」)\n若為上下班或公出途中事故，需檢附「事故陳述書」\n相關證明：雇主或目擊者證明、薪資出勤紀錄等"]
+      
+      B --> C["3. 補充文件資訊\n填寫個人基本資料、匯款帳戶\n並貼上「存摺封面影本」於申請書指定處"]
+      
+      C --> D["4. 送件審核\n整合全部文件與診斷書\n臨櫃或郵寄至勞保局辦事處\n待審核與核發補助"]
 
-      subgraph 注意
-        D --> T1["證明須含診斷與休養天數"]
-        C --> T2["薪資證明需與投保一致"]
-      end
       classDef step fill:#ffffff,stroke:#cbd5e1,stroke-width:1px,color:#0f172a,rx:6,ry:6;
-      class A,B,C,D,E,F,G,H,T1,T2,NG step
+      class A,B,C,D step
   `,
   impair: `
     flowchart TB
@@ -239,11 +221,22 @@ const charts: Record<string, string> = {
   `
 }
 const selected = ref<keyof typeof charts>('medical')
-const { chart: chartFromChat, selectedId, meta } = useMermaidChart()
-if (selectedId.value && (selectedId.value in charts)) {
+const mermaidChart = useMermaidChart()
+const { chart: chartFromChat, selectedId, meta } = mermaidChart
+if (selectedId?.value && (selectedId.value in charts)) {
   selected.value = selectedId.value as keyof typeof charts
 }
-const sharedChart = computed(() => chartFromChat.value || '')
+// 實際顯示的圖：
+// 1) 若聊天帶入的圖有指定 selectedId 且與目前選擇一致，優先顯示該圖
+// 2) 否則顯示本頁內建圖，確保左側切換可即時更新
+const displayChart = computed(() => {
+  const incoming = chartFromChat.value as string | undefined
+  const incomingFor = (selectedId?.value as any) || null
+  if (incoming && incomingFor && incomingFor === selected.value) {
+    return incoming
+  }
+  return charts[selected.value]
+})
 
 // 從聊天頁面傳來的文件詳細資訊
 const documentDetails = computed(() => {
@@ -252,14 +245,14 @@ const documentDetails = computed(() => {
 })
 
 // 選中的文件詳細資訊
-const selectedDocument = ref(null)
+const selectedDocument = ref<any>(null)
 
 // 機構資訊模態框
-const institutionModal = ref(null)
+const institutionModal = ref<any>(null)
 
 const current = computed(() => ({
   id: selected.value,
-  name: eligibleList.value.find(x => x.id === selected.value)?.name ?? '災保醫療給付',
+  name: eligibleList.value.find((x: Item) => x.id === selected.value)?.name ?? '災保醫療給付',
   chart: charts[selected.value]
 }))
 
@@ -267,7 +260,7 @@ function toast(Data: string) {
   console.log(Data)
 }
 
-function showDocumentModal(doc) {
+function showDocumentModal(doc: any) {
   selectedDocument.value = doc.details
 }
 
@@ -338,16 +331,17 @@ function showSubmissionInstitutions() {
 const checks = computed(() => {
   if (current.value.id === 'medical') {
     return [
-      { id: 1, label: '尚未申請就醫證明', status: 'error' },
-      { id: 2, label: 'B 文件尚未填寫完成', status: 'error' },
-      { id: 3, label: 'A 文件填寫完成', status: 'ok' }
+      { id: 1, label: '已申請傷病診斷書', status: 'ok' },
+      { id: 4, label: '申辦文件職災資訊已填寫完成', status: 'ok' },
+      { id: 2, label: '申辦文件個人資料尚未填寫完成', status: 'error' },
+      { id: 3, label: '申辦文件金融資料尚未填寫完成', status: 'error' },
     ]
   }
   if (current.value.id === 'sick') {
     return [
-      { id: 1, label: '醫師休養證明尚缺', status: 'error' },
+      { id: 1, label: '醫師休養證明', status: 'ok' },
+      { id: 2, label: '請假證明已核章', status: 'ok' },
       { id: 3, label: '薪資資料待核對', status: 'error' },
-      { id: 2, label: '請假證明已核章', status: 'ok' }
     ]
   }
   return [
@@ -355,6 +349,31 @@ const checks = computed(() => {
     { id: 2, label: '身分/就保文件齊全', status: 'ok' }
   ]
 })
+
+// 下載申請文件（Word 檔，放在 public/forms 下）
+const formDocxMap: Record<string, string> = {
+  medical: '/forms/勞工職業災害保險傷病給付(住院治療期間照護補助)申請書及給付(補助)收據.docx',
+  sick: '/forms/災保傷病給付及照護補助申請書.docx',
+}
+
+// 下載按鈕標題
+const formTitleMap: Record<string, string> = {
+  medical: '傷病給付及住院照護補助申請書',
+  sick: '災保傷病給付及照護補助申請書'
+}
+const currentFormTitle = computed(() => formTitleMap[selected.value] || formTitleMap.medical)
+
+function downloadApplicationFile() {
+  const url = formDocxMap[selected.value] || formDocxMap.medical
+  const anchor = document.createElement('a')
+  anchor.href = url
+  // 讓瀏覽器以下載處理，若瀏覽器阻擋，仍會在新分頁開啟
+  anchor.download = ''
+  anchor.target = '_blank'
+  document.body.appendChild(anchor)
+  anchor.click()
+  document.body.removeChild(anchor)
+}
 </script>
 
 <style scoped>
@@ -379,7 +398,11 @@ const checks = computed(() => {
 .header {
   width: 100%;
   padding: 10px 20px;
-  background-color: #008E73
+  background-color: #008E73;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
 }
 
 .JobButton {
@@ -401,7 +424,10 @@ const checks = computed(() => {
   background: #008E73;
   color: #fff;
   font-weight: 600;
-  cursor: default;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
 }
 
 /* 頁面與頂欄 */
@@ -413,7 +439,7 @@ const checks = computed(() => {
 
 /* 版心 */
 .grid {
-  width: 80vw;
+  width: 90vw;
   margin: 16px auto;
   padding: 0 16px;
   display: flex;
@@ -527,7 +553,7 @@ const checks = computed(() => {
 
 .mmd {
   overflow: auto;
-  max-height: 70vh;
+  max-height: 65vh;
 }
 
 .chips {
@@ -537,7 +563,7 @@ const checks = computed(() => {
 }
 
 .chip {
-  padding: 6px 12px;
+  padding: 6px 8px;
   border-radius: 8px;
   font-weight: 800;
   font-size: var(--fs-sm);

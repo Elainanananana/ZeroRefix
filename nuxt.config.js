@@ -15,6 +15,18 @@ export default defineNuxtConfig({
       tailwindcss: {},
       autoprefixer: {}
     }
-  }
-})
+  },
 
+  app: {
+    head: {
+      link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        // 依你的 Google Fonts 選擇器更換下面 href。這裡示範 Inter 與 Noto Sans TC。
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Rubik+Glitch&display=swap' }
+      ]
+    }
+  },
+
+  modules: ['@nuxt/image']
+})

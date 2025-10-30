@@ -1,13 +1,13 @@
 <template>
   <div class="jobsboard-root mx-auto max-w-6xl px-4 py-6 text-[18px] md:text-[19px] leading-8">
-    <p class="text-sm text-gray-500 mb-2">筆數：{{ source.length }}</p>
+    
 
     <header class="mb-6">
-      <div class="flex items-center gap-3">
-        <button class="px-5 py-2 rounded-full text-white font-semibold shadow hover:opacity-95 transition" :style="brandBg">
+      <div class="flex items-start gap-3">
+        <!-- <button class="px-5 py-2 rounded-full text-white font-semibold shadow hover:opacity-95 transition" :style="brandBg">
           職缺資訊
-        </button>
-
+        </button> -->
+        <p class="text-sm text-gray-500 mb-2">筆數：{{ source.length }}</p>
         <div class="ml-auto flex items-center gap-2">
           <input v-model="q" type="search" placeholder="搜尋職缺 / 公司 / 地點 / 內容"
                  class="w-72 md:w-96 rounded-2xl border border-gray-200 px-4 py-3 text-[16px] outline-none focus:ring-4 focus:ring-emerald-50" />

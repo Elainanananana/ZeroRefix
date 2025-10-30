@@ -49,7 +49,8 @@ async function render() {
     rankSpacing: 40,
     edgeLabelBackground: '#0a8f6f20'     // 邊標籤淡綠底
   },
-  flowchart: { useMaxWidth: true, htmlLabels: false, curve: 'basis', padding: 12 }
+  // 讓節點寬度依內容自動擴展，並禁用自動換行
+  flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis', padding: 12 }
 })
   const id = 'mmd-' + Math.random().toString(36).slice(2)
   const { svg } = await mermaid.render(id, props.chart)
@@ -77,6 +78,10 @@ async function render() {
     .node .label, .node text {
       fill: #0f172a !important;
       font-weight: 600;
+      /* 保留換行符，禁止自動換行 */
+      white-space: pre;
+      /* 讓多行內容靠左對齊 */
+      text-align: left;
     }
 
     /* 邊線與箭頭 */
@@ -202,6 +207,6 @@ async function downloadPdf(){
 .tb:disabled{ opacity:.5; cursor:not-allowed; }
 .gap{ flex:1 }
 .mmd-stage{ overflow:auto; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
-.mermaid-container{ min-width:600px; }
+.mermaid-container{ min-width:600px; width: max-content; }
 .mermaid-container :deep(svg){ height:auto; }
 </style>
