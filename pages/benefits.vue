@@ -44,9 +44,13 @@
         <h2 class="flow-title">{{ current.name }}申請流程</h2>
         <MermaidRenderer class="mmd" :chart="displayChart" />
 
-        <div>
+        <div class="flex justify-between align-middle">
+          <!-- 文件資料編輯區 -->
+          <button class="institution-btn" @click="showSubmissionInstitutions()">
+            <p>編輯 <b>{{ currentFormTitle }}</b></p>
+          </button>
           <!-- 申請文件下載區 -->
-          <button class="download-btn" @click="downloadApplicationFile()">
+          <button class="institution-btn" @click="downloadApplicationFile()">
             <span class="flex gap-2">
               <img src="/download.png" alt="download" class="download-icon" width="20">
               <p>下載 <b>{{ currentFormTitle }}</b></p>
