@@ -42,42 +42,48 @@
       <!-- 中欄：流程 -->
       <main class="center ">
         <h2 class="flow-title">{{ current.name }}申請流程</h2>
-        <MermaidRenderer class="mmd" :chart="displayChart" />
+        <div class="MermaidLayout">
+          <MermaidRenderer class="mmd" :chart="displayChart" />
+          <div class="MermaidData">
+            <!-- <div class="flex justify-between align-middle"> -->
+            <!-- 文件資料編輯區 -->
 
-        <div class="flex justify-between align-middle">
-          <!-- 文件資料編輯區 -->
-          <button class="institution-btn" @click="showSubmissionInstitutions()">
-            <p>編輯 <b>{{ currentFormTitle }}</b></p>
-          </button>
-          <!-- 申請文件下載區 -->
-          <button class="institution-btn" @click="downloadApplicationFile()">
-            <span class="flex gap-2">
-              <img src="/download.png" alt="download" class="download-icon" width="20">
-              <p>下載 <b>{{ currentFormTitle }}</b></p>
-            </span>
-          </button>
-        </div>
-        <!-- 文件詳細資訊區域（固定顯示；內部判斷是否有清單） -->
-        <div class="document-section">
-          <h3>所需文件詳細說明</h3>
-          <div v-if="documentDetails && documentDetails.length" class="document-grid">
-            <button v-for="doc in documentDetails" :key="doc.name" class="document-btn" @click="showDocumentModal(doc)">
-              📄 {{ doc.name }}
-            </button>
+            <!-- 申請文件下載區 -->
+            <!-- <button class="institution-btn" @click="downloadApplicationFile()">
+                <span class="flex gap-2">
+                  <img src="/download.png" alt="download" class="download-icon" width="20">
+                  <p>下載 <b>{{ currentFormTitle }}</b></p>
+                </span>
+              </button> -->
+            <!-- </div> -->
+            <div class="institution-buttons">
+              <button class="institution-btn" @click="showSubmissionInstitutions()">
+                <p>✏️ 編輯<b>{{ currentFormTitle }}</b></p>
+              </button>
+              <div class="document-grid">
+                <button class="institution-btn" @click="showApplicationInstitutions()">
+                  🏢 最近可就診機構
+                </button>
+                <button class="institution-btn" @click="showSubmissionInstitutions()">
+                  📮 最近可繳交機構
+                </button>
+              </div>
+
+            </div>
+            <!-- 文件詳細資訊區域（固定顯示；內部判斷是否有清單） -->
+            <div class="document-section" v-if="documentDetails && documentDetails.length">
+              <h3>所需文件說明</h3>
+              <div class="document-grid">
+                <button v-for="doc in documentDetails" :key="doc.name" class="document-btn"
+                  @click="showDocumentModal(doc)">
+                  📄 {{ doc.name }}
+                </button>
+              </div>
+            </div>
           </div>
-          <p v-else class="empty-hint">尚未有文件清單</p>
-        </div>
 
-        <div class="institution-buttons">
-          <button class="institution-btn" @click="showApplicationInstitutions()">
-            🏢 取得最近可就診機構資訊
-          </button>
-          <button class="institution-btn" @click="showSubmissionInstitutions()">
-            📮 取得最近繳交機構資訊
-          </button>
         </div>
       </main>
-
       <!-- 右欄：檢核表 -->
       <aside class="right">
         <ul class="checklist">
@@ -406,7 +412,7 @@ function downloadApplicationFile() {
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
 }
 
 .JobButton {
@@ -447,6 +453,7 @@ function downloadApplicationFile() {
   margin: 16px auto;
   padding: 0 16px;
   display: flex;
+  justify-content: center;
 }
 
 /* 中/右卡片外框 */
@@ -459,6 +466,7 @@ function downloadApplicationFile() {
 
 /* ===== 左欄：參考圖樣式 ===== */
 .left {
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -553,11 +561,6 @@ function downloadApplicationFile() {
   margin: 0;
   font-size: var(--fs-xl);
   font-weight: 900;
-}
-
-.mmd {
-  overflow: auto;
-  max-height: 65vh;
 }
 
 .chips {
@@ -690,7 +693,7 @@ function downloadApplicationFile() {
 
 .document-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 8px;
 }
 
@@ -713,9 +716,8 @@ function downloadApplicationFile() {
 
 /* 機構按鈕樣式 */
 .institution-buttons {
-  margin-top: 20px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit);
   gap: 8px;
 }
 
@@ -955,6 +957,20 @@ function downloadApplicationFile() {
   background: #f0fdf4;
   color: #047857;
   border-color: #047857;
+}
+
+.MermaidLayout {
+  border: 1px solid #e5e7eb;
+  display: flex;
+  max-height: 75vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.MermaidData {
+  width: auto;
+  min-width: 20vw;
+  padding: 10px;
 }
 
 /* RWD */
