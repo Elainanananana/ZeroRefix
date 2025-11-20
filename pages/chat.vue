@@ -319,71 +319,71 @@ function analyzeEligibleBenefits(history) {
   const benefits = []
 
   // 分析是否符合各項申請條件
-  // if (allText.includes('燙傷') || allText.includes('受傷') || allText.includes('醫療')) {
-  benefits.push({
-    id: 'medical',
-    name: '災保醫療給付',
-    deadline: '事故發生後 30 天內',
-    documents: [
-      { name: '就醫證明', details: documentDetails['就醫證明'] },
-      { name: '診斷證明書', details: documentDetails['診斷證明書'] },
-      { name: '醫療收據', details: documentDetails['醫療收據'] },
-      { name: '身分證影本', details: documentDetails['身分證影本'] },
-      { name: '勞保投保資料', details: documentDetails['勞保投保資料'] }
-    ],
-    steps: [
-      '向雇主通報職災',
-      '取得醫療證明文件',
-      '填寫申請書',
-      '送件至勞保局',
-      '等待審核結果'
-    ]
-  })
-  // }
+  if (allText.includes('燙傷') || allText.includes('受傷') || allText.includes('醫療')) {
+    benefits.push({
+      id: 'medical',
+      name: '災保醫療給付',
+      deadline: '事故發生後 30 天內',
+      documents: [
+        { name: '就醫證明', details: documentDetails['就醫證明'] },
+        { name: '診斷證明書', details: documentDetails['診斷證明書'] },
+        { name: '醫療收據', details: documentDetails['醫療收據'] },
+        { name: '身分證影本', details: documentDetails['身分證影本'] },
+        { name: '勞保投保資料', details: documentDetails['勞保投保資料'] }
+      ],
+      steps: [
+        '向雇主通報職災',
+        '取得醫療證明文件',
+        '填寫申請書',
+        '送件至勞保局',
+        '等待審核結果'
+      ]
+    })
+  }
 
-  // if (allText.includes('請假') || allText.includes('休養') || allText.includes('無法工作')) {
-  benefits.push({
-    id: 'sick',
-    name: '災保傷病給付及照護補助',
-    deadline: '請假開始後 30 天內',
-    documents: [
-      { name: '醫師診斷證明', details: documentDetails['醫師診斷證明'] },
-      { name: '休養證明', details: documentDetails['休養證明'] },
-      { name: '薪資證明', details: documentDetails['薪資證明'] },
-      { name: '請假證明', details: documentDetails['請假證明'] },
-      { name: '勞保投保資料', details: documentDetails['勞保投保資料'] }
-    ],
-    steps: [
-      '取得醫師休養證明',
-      '向雇主請假',
-      '準備薪資證明',
-      '填寫申請書',
-      '送件申請'
-    ]
-  })
-  // }
+  if (allText.includes('請假') || allText.includes('休養') || allText.includes('無法工作')) {
+    benefits.push({
+      id: 'sick',
+      name: '災保傷病給付及照護補助',
+      deadline: '請假開始後 30 天內',
+      documents: [
+        { name: '醫師診斷證明', details: documentDetails['醫師診斷證明'] },
+        { name: '休養證明', details: documentDetails['休養證明'] },
+        { name: '薪資證明', details: documentDetails['薪資證明'] },
+        { name: '請假證明', details: documentDetails['請假證明'] },
+        { name: '勞保投保資料', details: documentDetails['勞保投保資料'] }
+      ],
+      steps: [
+        '取得醫師休養證明',
+        '向雇主請假',
+        '準備薪資證明',
+        '填寫申請書',
+        '送件申請'
+      ]
+    })
+  }
 
-  // if (allText.includes('失能') || allText.includes('永久') || allText.includes('功能受損')) {
-  benefits.push({
-    id: 'impair',
-    name: '災保失能給付及照護補助',
-    deadline: '醫療穩定後 2 年內',
-    documents: [
-      { name: '失能診斷書', details: documentDetails['失能診斷書'] },
-      { name: '功能評估報告', details: documentDetails['功能評估報告'] },
-      { name: '身分證影本', details: documentDetails['身分證影本'] },
-      { name: '勞保投保資料', details: documentDetails['勞保投保資料'] },
-      { name: '醫療歷程', details: documentDetails['醫療歷程'] }
-    ],
-    steps: [
-      '醫療穩定後申請失能評估',
-      '取得失能等級證明',
-      '準備相關醫療文件',
-      '填寫申請書',
-      '送件審查'
-    ]
-  })
-  // }
+  if (allText.includes('失能') || allText.includes('永久') || allText.includes('功能受損')) {
+    benefits.push({
+      id: 'impair',
+      name: '災保失能給付及照護補助',
+      deadline: '醫療穩定後 2 年內',
+      documents: [
+        { name: '失能診斷書', details: documentDetails['失能診斷書'] },
+        { name: '功能評估報告', details: documentDetails['功能評估報告'] },
+        { name: '身分證影本', details: documentDetails['身分證影本'] },
+        { name: '勞保投保資料', details: documentDetails['勞保投保資料'] },
+        { name: '醫療歷程', details: documentDetails['醫療歷程'] }
+      ],
+      steps: [
+        '醫療穩定後申請失能評估',
+        '取得失能等級證明',
+        '準備相關醫療文件',
+        '填寫申請書',
+        '送件審查'
+      ]
+    })
+  }
 
   return benefits.length > 0 ? benefits : [{
     id: 'medical',

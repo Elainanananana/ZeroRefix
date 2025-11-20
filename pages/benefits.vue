@@ -57,7 +57,7 @@
               </button> -->
             <!-- </div> -->
             <div class="institution-buttons">
-              <button class="institution-btn" @click="showSubmissionInstitutions()">
+              <button class="institution-btn" @click="openFormPreview()">
                 <p>✏️ 編輯<b>{{ currentFormTitle }}</b></p>
               </button>
               <div class="document-grid">
@@ -89,7 +89,7 @@
         <ul class="checklist">
           <li v-for="c in checks" :key="c.id" :class="c.status" class="check">
             <span class="left-icon ok" v-if="c.status === 'ok'">✔</span>
-            <span class="left-icon ng" v-if="c.status === 'error'"> </span>
+            <span class="left-icon ng" v-if="c.status === 'error'" @click="checkstatus(c.id)"> </span>
             <span class="text">{{ c.label }}</span>
           </li>
         </ul>
@@ -173,6 +173,226 @@
         </div>
       </div>
     </Teleport>
+
+    <Teleport to="body">
+      <div v-if="formPreviewModal" class="modal-root">
+        <!-- 遮罩 -->
+        <div class="modal-backdrop" @click="formPreviewModal = null"></div>
+
+        <!-- 面板 -->
+        <div class="modal-panel institution-modal">
+          <div class="modal-header">
+            <h3 style="margin:0">{{ formPreviewModal.title }}</h3>
+            <button class="close-btn" @click="formPreviewModal = null">✕</button>
+          </div>
+
+          <div class="modal-content-word ">
+            <div class="docx-form">
+              <div class="body">
+                <!-- 保險事故 -->
+                <div class="group grid">
+                  <strong>保險事故</strong>
+                  <div class="row">
+                    <label>傷病類別</label>
+                    <div>
+                      <label class="tiny"><input type="radio" name="injuryCategory" value="occupational_injury"
+                          checked />
+                        職業傷害</label>
+                      &nbsp;&nbsp;
+                      <label class="tiny"><input type="radio" name="injuryCategory" value="occupational_disease" />
+                        職業病</label>
+                    </div>
+                  </div>
+                  <div class="row col2">
+                    <div>
+                      <label>傷病發生日期 - 年</label>
+                      <input type="number" id="incidentYear" value="2025" />
+                    </div>
+                    <div class="col2" style="
+									display: grid;
+									grid-template-columns: 1fr 1fr;
+									gap: 12px;
+								">
+                      <div>
+                        <label>月</label>
+                        <input type="number" id="incidentMonth" value="10" min="1" max="12" />
+                      </div>
+                      <div>
+                        <label>日</label>
+                        <input type="number" id="incidentDay" value="20" min="1" max="31" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 不能工作期間 + 薪資 -->
+                <div class="group grid">
+                  <strong>全日不能工作期間</strong>
+                  <div class="row col2">
+                    <div>
+                      <label>自（年/月/日）</label>
+                      <div class="col2" style="
+										display: grid;
+										grid-template-columns: 1fr 1fr 1fr;
+										gap: 8px;
+									">
+                        <input type="number" id="fromYear" value="2025" />
+                        <input type="number" id="fromMonth" value="10" min="1" max="12" />
+                        <input type="number" id="fromDay" value="21" min="1" max="31" />
+                      </div>
+                    </div>
+                    <div>
+                      <label>至（年/月/日）</label>
+                      <div class="col2" style="
+										display: grid;
+										grid-template-columns: 1fr 1fr 1fr;
+										gap: 8px;
+									">
+                        <input type="number" id="toYear" value="2025" />
+                        <input type="number" id="toMonth" value="10" min="1" max="12" />
+                        <input type="number" id="toDay" value="28" min="1" max="31" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <label>取得薪資（或報酬）情形</label>
+                    <div>
+                      <label class="tiny"><input type="radio" name="incomeStatus" value="none" checked />
+                        未取得</label>
+                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="incomeStatus" value="partial" />
+                        取得部分</label>
+                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="incomeStatus" value="full" />
+                        已取得原有</label>
+                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="incomeStatus" value="article59" />
+                        勞基法59條</label>
+                    </div>
+                    <div id="leaveGroup" class="tiny" style="margin-top: 6px">
+                      （僅在「已取得原有」時勾選）
+                      <label><input type="checkbox" id="leaveAnnual" />
+                        特休</label>
+                      <label><input type="checkbox" id="leaveRostered" />
+                        排休</label>
+                      <label><input type="checkbox" id="leaveFlex" />
+                        彈性假</label>
+                      <label><input type="checkbox" id="leaveShift" />
+                        輪休假</label>
+                      <label><input type="checkbox" id="leaveOTComp" />
+                        加班補休</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 復工 -->
+                <div class="group grid">
+                  <strong>是否已恢復工作</strong>
+                  <div class="row">
+                    <label class="tiny"><input type="checkbox" id="hasReturned" checked />
+                      是（若勾選，請填復工日期）</label>
+                  </div>
+                  <div class="row col2">
+                    <div>
+                      <label>復工日期 - 年</label>
+                      <input type="number" id="returnYear" value="2025" />
+                    </div>
+                    <div class="col2" style="
+									display: grid;
+									grid-template-columns: 1fr 1fr;
+									gap: 12px;
+								">
+                      <div>
+                        <label>月</label>
+                        <input type="number" id="returnMonth" value="10" min="1" max="12" />
+                      </div>
+                      <div>
+                        <label>日</label>
+                        <input type="number" id="returnDay" value="29" min="1" max="31" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 事故敘述 -->
+                <div class="group grid">
+                  <strong>事故敘述</strong>
+                  <div class="row">
+                    <label>傷害類型</label>
+                    <div>
+                      <label class="tiny"><input type="radio" name="injuryType" value="on_duty" checked />
+                        執行職務</label>
+                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="injuryType" value="commute" />
+                        上下班</label>
+                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="injuryType" value="business_trip" />
+                        公出</label>
+                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="injuryType" value="other" />
+                        其他</label>
+                      <input type="text" id="injuryTypeOther" placeholder="若選其他，請填寫" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <label>實際工作內容</label>
+                    <textarea id="jobContent">
+倉庫理貨、上架、包裝、搬運</textarea>
+                  </div>
+
+                  <div class="row col2">
+                    <div>
+                      <label>受傷時間（24小時制）</label>
+                      <div style="
+										display: grid;
+										grid-template-columns: 1fr 1fr;
+										gap: 8px;
+									">
+                        <input type="number" id="injuryHour" value="09" min="0" max="23" placeholder="時" />
+                        <input type="number" id="injuryMinute" value="35" min="0" max="59" placeholder="分" />
+                      </div>
+                    </div>
+                    <div>
+                      <label>受傷地點描述（於何處）</label>
+                      <input type="text" id="placeDesc" value="台中市" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <label>詳細地址</label>
+                    <input type="text" id="addressLine" value="台北市中正區仁愛路一段 1 號" />
+                  </div>
+
+                  <div class="row">
+                    <label>受傷原因及經過</label>
+                    <textarea id="causeLine">
+用力的時候往後扭到腰，扭傷。</textarea>
+                  </div>
+
+                  <div class="row col2">
+                    <div>
+                      <label>化學物質名稱（如適用）</label>
+                      <input type="text" id="chemicalNameLine" value="" placeholder="無則留空" />
+                    </div>
+                    <div>
+                      <label>公出事故補充（如適用）</label>
+                      <input type="text" id="businessTripDetailLine" value="" placeholder="無則留空" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <label class="tiny"><input type="checkbox" id="applyCare" />
+                      申請住院照護補助</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn primary" @click="downloadDocx">
+              下載文件
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -180,7 +400,26 @@
 import { computed, ref } from 'vue'
 import MermaidRenderer from '~/components/MermaidRenderer.vue'
 import { useMermaidChart } from '~/composables/useMermaidChart'
+import PizZip from 'pizzip'
+import Docxtemplater from 'docxtemplater'
+import { saveAs } from 'file-saver'
 
+const formPreviewModal = ref<null | {
+  title: string
+  data: {
+    injuryCategory: string
+    incidentDate: string
+    inabilityPeriod: string
+    incomeStatus: string
+    hasReturned: string
+    injuryTime: string
+    addressLine: string
+    jobContent: string
+    causeLine: string
+  }
+}>(null)
+const DEFAULT_TEMPLATE_URL = '~/public/forms/work_injury.docx' // 路徑看你實際放哪裡
+let templateBuffer: ArrayBuffer | null = null
 type Item = { id: string; name: string }
 const open = ref(false)
 const eligibleList = ref<Item[]>([
@@ -192,7 +431,16 @@ const notEligibleList = ref<Item[]>([
   { id: 'x1', name: '失能照護補助' },
   { id: 'x2', name: '本人死亡給付' }
 ])
+const safe = (v: any): string => {
+  if (v === null || v === undefined) return ''
+  const s = String(v).trim()
+  return s === 'undefined' || s === 'null' ? '' : s
+}
 
+const fmtDate = (o: { year?: string; month?: string; day?: string } = {}): string =>
+  safe(o.year) || safe(o.month) || safe(o.day)
+    ? `${safe(o.year)} 年 ${safe(o.month)} 月 ${safe(o.day)} 日`
+    : ''
 const charts: Record<string, string> = {
   medical: `
     flowchart TB
@@ -337,27 +585,26 @@ function showSubmissionInstitutions() {
     institutions: submissionInstitutions
   }
 }
-
-const checks = computed(() => {
-  if (current.value.id === 'medical') {
-    return [
-      { id: 1, label: '已申請傷病診斷書', status: 'ok' },
-      { id: 4, label: '申辦文件職災資訊已填寫完成', status: 'ok' },
-      { id: 2, label: '申辦文件個人資料尚未填寫完成', status: 'error' },
-      { id: 3, label: '申辦文件金融資料尚未填寫完成', status: 'error' },
-    ]
-  }
-  if (current.value.id === 'sick') {
-    return [
-      { id: 1, label: '醫師休養證明', status: 'ok' },
-      { id: 2, label: '請假證明已核章', status: 'ok' },
-      { id: 3, label: '薪資資料待核對', status: 'error' },
-    ]
-  }
-  return [
+const checksMap = ref({
+  medical: [
+    { id: 1, label: '已申請傷病診斷書', status: 'ok' },
+    { id: 4, label: '申辦文件職災資訊已填寫完成', status: 'ok' },
+    { id: 2, label: '申辦文件個人資料尚未填寫完成', status: 'error' },
+    { id: 3, label: '申辦文件金融資料尚未填寫完成', status: 'error' },
+  ],
+  sick: [
+    { id: 1, label: '醫師休養證明', status: 'ok' },
+    { id: 2, label: '請假證明已核章', status: 'ok' },
+    { id: 3, label: '薪資資料待核對', status: 'error' },
+  ],
+  default: [
     { id: 1, label: '失能等級尚未評估', status: 'error' },
     { id: 2, label: '身分/就保文件齊全', status: 'ok' }
   ]
+})
+const checks = computed(() => {
+  const type = current.value.id as 'medical' | 'sick' | 'default'
+  return checksMap.value[type] ?? checksMap.value.default
 })
 
 // 下載申請文件（Word 檔，放在 public/forms 下）
@@ -384,6 +631,363 @@ function downloadApplicationFile() {
   anchor.click()
   document.body.removeChild(anchor)
 }
+
+function collectRaw() {
+  // 這份就是照你貼的 HTML 143–548 行做出來的預設值
+  const DEFAULT_RAW = {
+    insuranceAccident: {
+      injuryCategory: 'occupational_injury', // 職業傷害
+      incidentDate: {
+        year: '2025',
+        month: '10',
+        day: '20'
+      }
+    },
+    inabilityPeriod: {
+      from: {
+        year: '2025',
+        month: '10',
+        day: '21'
+      },
+      to: {
+        year: '2025',
+        month: '10',
+        day: '28'
+      }
+    },
+    incomeDuringLeave: {
+      status: 'none',      // 未取得
+      leaveTypes: []       // 都沒勾
+    },
+    returnToWork: {
+      hasReturned: true,   // 是否已恢復工作：有勾
+      date: {
+        year: '2025',
+        month: '10',
+        day: '29'
+      }
+    },
+    injuryReport: {
+      injuryType: 'on_duty',      // 傷害類型：執行職務
+      injuryTypeOther: '',
+      jobContent: '倉庫理貨、上架、包裝、搬運',
+      injuryTime: {
+        hour: '09',
+        minute: '35'
+      },
+      injuryPlace: {
+        locationDesc: '台中市',
+        address: '台北市中正區仁愛路一段 1 號'
+      },
+      causeAndProcess: '用力的時候往後扭到腰，扭傷。',
+      chemicalName: '',
+      businessTripDetail: ''
+    },
+    inpatientCareSubsidy: {
+      apply: false // 「申請住院照護補助」原檔是沒勾
+    }
+  }
+
+
+  const base = JSON.parse(JSON.stringify(DEFAULT_RAW))
+
+  const injuryCategoryNodes = [
+    ...document.querySelectorAll<HTMLInputElement>('input[name="injuryCategory"]')
+  ]
+  const incidentYear = document.getElementById('incidentYear') as HTMLInputElement | null
+  const incidentMonth = document.getElementById('incidentMonth') as HTMLInputElement | null
+  const incidentDay = document.getElementById('incidentDay') as HTMLInputElement | null
+
+  const fromYear = document.getElementById('fromYear') as HTMLInputElement | null
+  const fromMonth = document.getElementById('fromMonth') as HTMLInputElement | null
+  const fromDay = document.getElementById('fromDay') as HTMLInputElement | null
+  const toYear = document.getElementById('toYear') as HTMLInputElement | null
+  const toMonth = document.getElementById('toMonth') as HTMLInputElement | null
+  const toDay = document.getElementById('toDay') as HTMLInputElement | null
+
+  const incomeStatusNodes = [
+    ...document.querySelectorAll<HTMLInputElement>('input[name="incomeStatus"]')
+  ]
+  const leaveAnnual = document.getElementById('leaveAnnual') as HTMLInputElement | null
+  const leaveRostered = document.getElementById('leaveRostered') as HTMLInputElement | null
+  const leaveFlex = document.getElementById('leaveFlex') as HTMLInputElement | null
+  const leaveShift = document.getElementById('leaveShift') as HTMLInputElement | null
+  const leaveOTComp = document.getElementById('leaveOTComp') as HTMLInputElement | null
+
+  const hasReturned = document.getElementById('hasReturned') as HTMLInputElement | null
+  const returnYear = document.getElementById('returnYear') as HTMLInputElement | null
+  const returnMonth = document.getElementById('returnMonth') as HTMLInputElement | null
+  const returnDay = document.getElementById('returnDay') as HTMLInputElement | null
+
+  const injuryTypeNodes = [
+    ...document.querySelectorAll<HTMLInputElement>('input[name="injuryType"]')
+  ]
+  const injuryTypeOther = document.getElementById('injuryTypeOther') as HTMLInputElement | null
+
+  const jobContent = document.getElementById('jobContent') as HTMLTextAreaElement | null
+  const injuryHour = document.getElementById('injuryHour') as HTMLInputElement | null
+  const injuryMinute = document.getElementById('injuryMinute') as HTMLInputElement | null
+  const placeDesc = document.getElementById('placeDesc') as HTMLInputElement | null
+  const addressLine = document.getElementById('addressLine') as HTMLInputElement | null
+  const causeLine = document.getElementById('causeLine') as HTMLTextAreaElement | null
+  const chemicalNameLine = document.getElementById('chemicalNameLine') as HTMLInputElement | null
+  const businessTripDetailLine = document.getElementById('businessTripDetailLine') as HTMLInputElement | null
+
+  const applyCare = document.getElementById('applyCare') as HTMLInputElement | null
+
+  // === 1. 傷病類別 ===
+  const selectedCategory = injuryCategoryNodes.find(x => x.checked)?.value
+  if (selectedCategory) {
+    base.insuranceAccident.injuryCategory = selectedCategory
+  }
+  if (incidentYear) base.insuranceAccident.incidentDate.year = safe(incidentYear.value) || base.insuranceAccident.incidentDate.year
+  if (incidentMonth) base.insuranceAccident.incidentDate.month = safe(incidentMonth.value) || base.insuranceAccident.incidentDate.month
+  if (incidentDay) base.insuranceAccident.incidentDate.day = safe(incidentDay.value) || base.insuranceAccident.incidentDate.day
+
+  // === 2. 全日不能工作期間 ===
+  if (fromYear) base.inabilityPeriod.from.year = safe(fromYear.value) || base.inabilityPeriod.from.year
+  if (fromMonth) base.inabilityPeriod.from.month = safe(fromMonth.value) || base.inabilityPeriod.from.month
+  if (fromDay) base.inabilityPeriod.from.day = safe(fromDay.value) || base.inabilityPeriod.from.day
+
+  if (toYear) base.inabilityPeriod.to.year = safe(toYear.value) || base.inabilityPeriod.to.year
+  if (toMonth) base.inabilityPeriod.to.month = safe(toMonth.value) || base.inabilityPeriod.to.month
+  if (toDay) base.inabilityPeriod.to.day = safe(toDay.value) || base.inabilityPeriod.to.day
+
+  // === 3. 薪資取得情形 ===
+  const selectedIncome = incomeStatusNodes.find(x => x.checked)?.value
+  if (selectedIncome) {
+    base.incomeDuringLeave.status = selectedIncome
+  }
+
+  const leaveTypes: string[] = []
+  if (leaveAnnual?.checked) leaveTypes.push('annual')
+  if (leaveRostered?.checked) leaveTypes.push('rostered')
+  if (leaveFlex?.checked) leaveTypes.push('flex')
+  if (leaveShift?.checked) leaveTypes.push('shift')
+  if (leaveOTComp?.checked) leaveTypes.push('overtime_comp')
+  // 如果使用者有勾，就覆蓋；沒勾就維持預設（空陣列）
+  if (leaveTypes.length > 0) {
+    base.incomeDuringLeave.leaveTypes = leaveTypes
+  }
+
+  // === 4. 是否已恢復工作 ===
+  if (hasReturned) {
+    base.returnToWork.hasReturned = !!hasReturned.checked
+  }
+  if (returnYear) base.returnToWork.date.year = safe(returnYear.value) || base.returnToWork.date.year
+  if (returnMonth) base.returnToWork.date.month = safe(returnMonth.value) || base.returnToWork.date.month
+  if (returnDay) base.returnToWork.date.day = safe(returnDay.value) || base.returnToWork.date.day
+
+  // === 5. 事故敘述 ===
+  const selectedInjuryType = injuryTypeNodes.find(x => x.checked)?.value
+  if (selectedInjuryType) {
+    base.injuryReport.injuryType = selectedInjuryType
+  }
+  if (injuryTypeOther) {
+    const other = safe(injuryTypeOther.value)
+    base.injuryReport.injuryTypeOther =
+      base.injuryReport.injuryType === 'other' ? other : ''
+  }
+
+  if (jobContent) base.injuryReport.jobContent = safe(jobContent.value) || base.injuryReport.jobContent
+
+  if (injuryHour) base.injuryReport.injuryTime.hour = safe(injuryHour.value) || base.injuryReport.injuryTime.hour
+  if (injuryMinute) base.injuryReport.injuryTime.minute = safe(injuryMinute.value) || base.injuryReport.injuryTime.minute
+
+  if (placeDesc) base.injuryReport.injuryPlace.locationDesc = safe(placeDesc.value) || base.injuryReport.injuryPlace.locationDesc
+  if (addressLine) base.injuryReport.injuryPlace.address = safe(addressLine.value) || base.injuryReport.injuryPlace.address
+
+  if (causeLine) base.injuryReport.causeAndProcess = safe(causeLine.value) || base.injuryReport.causeAndProcess
+  if (chemicalNameLine) base.injuryReport.chemicalName = safe(chemicalNameLine.value) || base.injuryReport.chemicalName
+  if (businessTripDetailLine) base.injuryReport.businessTripDetail = safe(businessTripDetailLine.value) || base.injuryReport.businessTripDetail
+
+  // === 6. 住院照護補助 ===
+  if (applyCare) {
+    base.inpatientCareSubsidy.apply = !!applyCare.checked
+  }
+
+  return base
+}
+
+function decorate(data: any) {
+  const out = JSON.parse(JSON.stringify(data))
+
+  const cat = safe(out.insuranceAccident?.injuryCategory)
+  out.isOccInjury = cat === 'occupational_injury'
+  out.isOccDisease = cat === 'occupational_disease'
+
+  // ✅ 傷病類別：加一個給畫面用的中文標籤
+  out.injuryCategoryLabel =
+    cat === 'occupational_injury'
+      ? '職業傷害'
+      : cat === 'occupational_disease'
+        ? '職業病'
+        : cat || ''
+
+  const st = safe(out.incomeDuringLeave?.status)
+  out.isIncomeNone = st === 'none'
+  out.isIncomePartial = st === 'partial'
+  out.isIncomeFull = st === 'full'
+  out.isIncomeArt59 = st === 'article59'
+
+  // ✅ 薪資取得情形：中文顯示文字
+  out.incomeStatusLabel =
+    st === 'none'
+      ? '未取得'
+      : st === 'partial'
+        ? '取得部分'
+        : st === 'full'
+          ? '已取得原有'
+          : st === 'article59'
+            ? '勞基法第59條'
+            : st || ''
+
+  const arr = Array.isArray(out.incomeDuringLeave?.leaveTypes)
+    ? out.incomeDuringLeave.leaveTypes
+    : []
+  const hasFull = out.isIncomeFull
+  out.leaveAnnual = hasFull && arr.includes('annual')
+  out.leaveRostered = hasFull && arr.includes('rostered')
+  out.leaveFlex = hasFull && arr.includes('flex')
+  out.leaveShift = hasFull && arr.includes('shift')
+  out.leaveOTComp = hasFull && arr.includes('overtime_comp')
+
+  out.hasReturned = !!out.returnToWork?.hasReturned
+
+  const it = safe(out.injuryReport?.injuryType)
+  out.isOnDuty = it === 'on_duty'
+  out.isCommute = it === 'commute'
+  out.isBusinessTrip = it === 'business_trip'
+  out.isOtherInjury = it === 'other'
+
+  // ✅ 全日不能工作期間（原本就有）
+  out.inabilityFromLine = fmtDate(out.inabilityPeriod?.from)
+  out.inabilityToLine = fmtDate(out.inabilityPeriod?.to)
+
+  // ✅ 傷病發生日：跟原檔一樣做成年/月/日字串
+  out.incidentDateLine = fmtDate(out.insuranceAccident?.incidentDate)
+
+  out.returnToWorkDateLine = out.hasReturned
+    ? fmtDate(out.returnToWork?.date)
+    : ''
+
+  const hh = Number(safe(out.injuryReport?.injuryTime?.hour)) || 0
+  const mm = Number(safe(out.injuryReport?.injuryTime?.minute)) || 0
+  const period = hh >= 12 ? '下午' : '上午'
+  const h12 = hh % 12 === 0 ? 12 : hh % 12
+  const pad2 = (n: number) => String(n).padStart(2, '0')
+  out.injuryTimeLineZh =
+    hh || mm ? `${period} ${pad2(h12)} 時 ${pad2(mm)} 分` : ''
+
+  // alias（原本就有）
+  out.workContent = safe(out.injuryReport?.jobContent)
+  out.placeDesc = safe(out.injuryReport?.injuryPlace?.locationDesc)
+  out.addressLine = safe(out.injuryReport?.injuryPlace?.address)
+  out.causeLine = safe(out.injuryReport?.causeAndProcess)
+  out.chemicalNameLine = safe(out.injuryReport?.chemicalName)
+  out.businessTripDetailLine = safe(out.injuryReport?.businessTripDetail)
+  out.injuryTypeOther = safe(out.injuryReport?.injuryTypeOther)
+
+  return out
+}
+
+function buildData() {
+  const raw = collectRaw()
+  return decorate(raw)
+}
+
+async function loadTemplate() {
+  try {
+    const res = await fetch("/forms/work_injury.docx", { cache: 'no-store' })
+    if (!res.ok) throw new Error('模板載入失敗')
+    templateBuffer = await res.arrayBuffer()
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+function downloadDocx() {
+  if (!templateBuffer) {
+    console.warn('模板尚未載入完成')
+    return
+  }
+  try {
+    const zip = new PizZip(templateBuffer)
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+      delimiters: { start: '[[', end: ']]' }, // 你樣板用 [[ ]]
+      nullGetter: () => ''
+    })
+
+    const data = buildData()
+    doc.setData(data)
+    doc.render()
+
+    const blob = doc.getZip().generate({
+      type: 'blob',
+      mimeType:
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    })
+
+    const fileName = `申請書_${Date.now()}.docx`
+    saveAs(blob, fileName)
+  } catch (e: any) {
+    console.error('Docxtemplater error:', e)
+    const details = e.properties?.errors || e.message || e.toString()
+    alert(
+      '合併模板失敗：\n' +
+      (Array.isArray(details)
+        ? details.map((x: any) => x.message).join('\n')
+        : details)
+    )
+  }
+}
+
+function openFormPreview() {
+  const data = buildData()
+
+  formPreviewModal.value = {
+    title: '檢視文件內容',
+    data: {
+      // ✅ 直接用中文標籤
+      injuryCategory: data.injuryCategoryLabel,
+
+      // ✅ 用 incidentDateLine：2025 年 10 月 20 日
+      incidentDate: data.incidentDateLine || '—',
+
+      // ✅ 跟原檔一樣：從 ～ 至
+      inabilityPeriod:
+        data.inabilityFromLine || data.inabilityToLine
+          ? `${data.inabilityFromLine} 至 ${data.inabilityToLine}`
+          : '—',
+
+      // ✅ 薪資取得情形
+      incomeStatus: data.incomeStatusLabel || '—',
+
+      // ✅ 是否已復工
+      hasReturned: data.hasReturned ? data.returnToWorkDateLine : '尚未復工',
+
+      // ✅ 受傷時間（上午 09 時 35 分）
+      injuryTime: data.injuryTimeLineZh || '—',
+
+      // ✅ 受傷地點 / 實際工作內容 / 受傷原因
+      addressLine: data.addressLine || '—',
+      jobContent: data.workContent || '—',
+      causeLine: data.causeLine || '—'
+    }
+  }
+}
+
+function checkstatus(id) {
+  const type = current.value.id as 'medical' | 'sick' | 'default'
+  const list = checksMap.value[type]
+  const target = list.find(item => item.id === id)
+  target.status = 'ok'
+}
+onMounted(() => {
+  loadTemplate()
+})
 </script>
 
 <style scoped>
@@ -450,7 +1054,7 @@ function downloadApplicationFile() {
 /* 版心 */
 .grid {
   width: 90vw;
-  margin: 16px auto;
+  margin: 10px auto;
   padding: 0 16px;
   display: flex;
   justify-content: center;
@@ -805,6 +1409,12 @@ function downloadApplicationFile() {
   overflow-y: auto;
 }
 
+.modal-content-word {
+  padding: 10px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
 .description {
   color: #374151;
   margin-bottom: 16px;
@@ -972,6 +1582,114 @@ function downloadApplicationFile() {
   min-width: 20vw;
   padding: 10px;
 }
+
+/* 顏色一樣沿用原始檔 */
+:root {
+  --brand: #0ea5a4;
+  --border: #e5e7eb;
+  --muted: #64748b;
+}
+
+/* 只影響這個表單 */
+.docx-form {
+  width: 100%;
+}
+
+/* 內層所有元素 box-sizing */
+.docx-form * {
+  box-sizing: border-box;
+}
+
+/* 原本 .body 的 padding */
+.docx-form .body {
+  width: 100%;
+}
+
+/* group = 每一塊卡片 */
+.docx-form .group {
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: #fafafa;
+  margin-bottom: 12px;
+}
+
+/* 小標題，例如「保險事故」「全日不能工作期間」 */
+.docx-form strong {
+  font-weight: 600;
+}
+
+/* grid / row / col2 排版 – 完整搬原來的邏輯 */
+.docx-form .grid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.docx-form .row {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.docx-form .row.col2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 這個是給你那些內聯 style 沒有寫 display 的 col2 用的備胎 */
+.docx-form .col2:not(.row) {
+  width: 100%;
+}
+
+/* label 樣式 */
+.docx-form label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* input / select / textarea 樣式 */
+.docx-form input[type="text"],
+.docx-form input[type="number"],
+.docx-form select,
+.docx-form textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  font: inherit;
+}
+
+/* radio / checkbox 也還是用瀏覽器預設就好 */
+.docx-form input[type="radio"],
+.docx-form input[type="checkbox"] {
+  width: auto;
+}
+
+/* textarea 高度與可調整性 */
+.docx-form textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+/* 小字說明用的 class（原本的 .hint、.tiny） */
+.docx-form .hint {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  justify-content: center;
+}
+
+.docx-form .tiny {
+  font-size: 12px;
+}
+
+/* 🔧 避免在 modal 裡出現水平捲軸 */
+.docx-form {
+  overflow-x: hidden;
+}
+
+
 
 /* RWD */
 @media (max-width:1100px) {
