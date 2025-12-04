@@ -187,7 +187,7 @@
           </div>
 
           <div class="modal-content-word ">
-            <div class="docx-form">
+            <div class="docx-form" v-if="formRaw">
               <div class="body">
                 <!-- 保險事故 -->
                 <div class="group grid">
@@ -206,7 +206,7 @@
                   <div class="row col2">
                     <div>
                       <label>傷病發生日期 - 年</label>
-                      <input type="number" id="incidentYear" value="2025" />
+                      <input type="number" id="incidentYear" v-model="formRaw.insuranceAccident.incidentDate.year" />
                     </div>
                     <div class="col2" style="
 									display: grid;
@@ -215,11 +215,13 @@
 								">
                       <div>
                         <label>月</label>
-                        <input type="number" id="incidentMonth" value="10" min="1" max="12" />
+                        <input type="number" id="incidentMonth" min="1" max="12"
+                          v-model="formRaw.insuranceAccident.incidentDate.month" />
                       </div>
                       <div>
                         <label>日</label>
-                        <input type="number" id="incidentDay" value="20" min="1" max="31" />
+                        <input type="number" id="incidentDay" min="1" max="31"
+                          v-model="formRaw.insuranceAccident.incidentDate.day" />
                       </div>
                     </div>
                   </div>
@@ -236,9 +238,11 @@
 										grid-template-columns: 1fr 1fr 1fr;
 										gap: 8px;
 									">
-                        <input type="number" id="fromYear" value="2025" />
-                        <input type="number" id="fromMonth" value="10" min="1" max="12" />
-                        <input type="number" id="fromDay" value="21" min="1" max="31" />
+                        <input type="number" id="fromYear" v-model="formRaw.inabilityPeriod.from.year" />
+                        <input type="number" id="fromMonth" min="1" max="12"
+                          v-model="formRaw.inabilityPeriod.from.month" />
+                        <input type="number" id="fromDay" min="1" max="31" v-model="formRaw.inabilityPeriod.from.day" />
+
                       </div>
                     </div>
                     <div>
@@ -248,9 +252,10 @@
 										grid-template-columns: 1fr 1fr 1fr;
 										gap: 8px;
 									">
-                        <input type="number" id="toYear" value="2025" />
-                        <input type="number" id="toMonth" value="10" min="1" max="12" />
-                        <input type="number" id="toDay" value="28" min="1" max="31" />
+                        <input type="number" id="toYear" v-model="formRaw.inabilityPeriod.to.year" />
+                        <input type="number" id="toMonth" min="1" max="12" v-model="formRaw.inabilityPeriod.to.month" />
+                        <input type="number" id="toDay" min="1" max="31" v-model="formRaw.inabilityPeriod.to.day" />
+
                       </div>
                     </div>
                   </div>
@@ -258,27 +263,54 @@
                   <div class="row">
                     <label>取得薪資（或報酬）情形</label>
                     <div>
-                      <label class="tiny"><input type="radio" name="incomeStatus" value="none" checked />
-                        未取得</label>
-                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="incomeStatus" value="partial" />
-                        取得部分</label>
-                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="incomeStatus" value="full" />
-                        已取得原有</label>
-                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="incomeStatus" value="article59" />
-                        勞基法59條</label>
+                      <label class="tiny">
+                        <input type="radio" value="none" v-model="formRaw.incomeDuringLeave.status" />
+                        未取得
+                      </label>
+
+                      <label class="tiny">
+                        <input type="radio" value="partial" v-model="formRaw.incomeDuringLeave.status" />
+                        取得部分
+                      </label>
+
+                      <label class="tiny">
+                        <input type="radio" value="full" v-model="formRaw.incomeDuringLeave.status" />
+                        已取得原有
+                      </label>
+
+                      <label class="tiny">
+                        <input type="radio" value="article59" v-model="formRaw.incomeDuringLeave.status" />
+                        勞基法59條
+                      </label>
+
                     </div>
                     <div id="leaveGroup" class="tiny" style="margin-top: 6px">
                       （僅在「已取得原有」時勾選）
-                      <label><input type="checkbox" id="leaveAnnual" />
-                        特休</label>
-                      <label><input type="checkbox" id="leaveRostered" />
-                        排休</label>
-                      <label><input type="checkbox" id="leaveFlex" />
-                        彈性假</label>
-                      <label><input type="checkbox" id="leaveShift" />
-                        輪休假</label>
-                      <label><input type="checkbox" id="leaveOTComp" />
-                        加班補休</label>
+                      <label>
+                        <input type="checkbox" value="annual" v-model="formRaw.incomeDuringLeave.leaveTypes" />
+                        特休
+                      </label>
+
+                      <label>
+                        <input type="checkbox" value="rostered" v-model="formRaw.incomeDuringLeave.leaveTypes" />
+                        排休
+                      </label>
+
+                      <label>
+                        <input type="checkbox" value="flex" v-model="formRaw.incomeDuringLeave.leaveTypes" />
+                        彈性假
+                      </label>
+
+                      <label>
+                        <input type="checkbox" value="shift" v-model="formRaw.incomeDuringLeave.leaveTypes" />
+                        輪休假
+                      </label>
+
+                      <label>
+                        <input type="checkbox" value="overtime_comp" v-model="formRaw.incomeDuringLeave.leaveTypes" />
+                        加班補休
+                      </label>
+
                     </div>
                   </div>
                 </div>
@@ -287,13 +319,15 @@
                 <div class="group grid">
                   <strong>是否已恢復工作</strong>
                   <div class="row">
-                    <label class="tiny"><input type="checkbox" id="hasReturned" checked />
-                      是（若勾選，請填復工日期）</label>
+                    <label class="tiny">
+                      <input type="checkbox" id="hasReturned" v-model="formRaw.returnToWork.hasReturned" />
+                      是（若勾選，請填復工日期）
+                    </label>
                   </div>
                   <div class="row col2">
                     <div>
                       <label>復工日期 - 年</label>
-                      <input type="number" id="returnYear" value="2025" />
+                      <input type="number" id="returnYear" v-model="formRaw.returnToWork.date.year" />
                     </div>
                     <div class="col2" style="
 									display: grid;
@@ -302,11 +336,12 @@
 								">
                       <div>
                         <label>月</label>
-                        <input type="number" id="returnMonth" value="10" min="1" max="12" />
+                        <input type="number" id="returnMonth" min="1" max="12"
+                          v-model="formRaw.returnToWork.date.month" />
                       </div>
                       <div>
                         <label>日</label>
-                        <input type="number" id="returnDay" value="29" min="1" max="31" />
+                        <input type="number" id="returnDay" min="1" max="31" v-model="formRaw.returnToWork.date.day" />
                       </div>
                     </div>
                   </div>
@@ -318,22 +353,33 @@
                   <div class="row">
                     <label>傷害類型</label>
                     <div>
-                      <label class="tiny"><input type="radio" name="injuryType" value="on_duty" checked />
-                        執行職務</label>
-                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="injuryType" value="commute" />
-                        上下班</label>
-                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="injuryType" value="business_trip" />
-                        公出</label>
-                      &nbsp;&nbsp;<label class="tiny"><input type="radio" name="injuryType" value="other" />
-                        其他</label>
-                      <input type="text" id="injuryTypeOther" placeholder="若選其他，請填寫" />
+                      <label class="tiny">
+                        <input type="radio" value="on_duty" v-model="formRaw.injuryReport.injuryType" />
+                        執行職務
+                      </label>
+
+                      <label class="tiny">
+                        <input type="radio" value="commute" v-model="formRaw.injuryReport.injuryType" />
+                        上下班
+                      </label>
+
+                      <label class="tiny">
+                        <input type="radio" value="business_trip" v-model="formRaw.injuryReport.injuryType" />
+                        公出
+                      </label>
+
+                      <label class="tiny">
+                        <input type="radio" value="other" v-model="formRaw.injuryReport.injuryType" />
+                        其他
+                      </label>
+                      <input type="text" id="injuryTypeOther" placeholder="若選其他，請填寫"
+                        v-model="formRaw.injuryReport.injuryTypeOther" />
                     </div>
                   </div>
 
                   <div class="row">
                     <label>實際工作內容</label>
-                    <textarea id="jobContent">
-倉庫理貨、上架、包裝、搬運</textarea>
+                    <textarea id="jobContent" v-model="formRaw.injuryReport.jobContent"></textarea>
                   </div>
 
                   <div class="row col2">
@@ -344,41 +390,46 @@
 										grid-template-columns: 1fr 1fr;
 										gap: 8px;
 									">
-                        <input type="number" id="injuryHour" value="09" min="0" max="23" placeholder="時" />
-                        <input type="number" id="injuryMinute" value="35" min="0" max="59" placeholder="分" />
+                        <input type="number" id="injuryHour" min="0" max="23" placeholder="時"
+                          v-model="formRaw.injuryReport.injuryTime.hour" />
+                        <input type="number" id="injuryMinute" min="0" max="59" placeholder="分"
+                          v-model="formRaw.injuryReport.injuryTime.minute" />
                       </div>
                     </div>
                     <div>
                       <label>受傷地點描述（於何處）</label>
-                      <input type="text" id="placeDesc" value="台中市" />
+                      <input type="text" id="placeDesc" v-model="formRaw.injuryReport.injuryPlace.locationDesc" />
                     </div>
                   </div>
 
                   <div class="row">
                     <label>詳細地址</label>
-                    <input type="text" id="addressLine" value="台北市中正區仁愛路一段 1 號" />
+                    <input type="text" id="addressLine" v-model="formRaw.injuryReport.injuryPlace.address" />
                   </div>
 
                   <div class="row">
                     <label>受傷原因及經過</label>
-                    <textarea id="causeLine">
-用力的時候往後扭到腰，扭傷。</textarea>
+                    <textarea id="causeLine" v-model="formRaw.injuryReport.causeAndProcess"></textarea>
                   </div>
 
                   <div class="row col2">
                     <div>
                       <label>化學物質名稱（如適用）</label>
-                      <input type="text" id="chemicalNameLine" value="" placeholder="無則留空" />
+                      <input type="text" id="chemicalNameLine" placeholder="無則留空"
+                        v-model="formRaw.injuryReport.chemicalName" />
                     </div>
                     <div>
                       <label>公出事故補充（如適用）</label>
-                      <input type="text" id="businessTripDetailLine" value="" placeholder="無則留空" />
+                      <input type="text" id="businessTripDetailLine" placeholder="無則留空"
+                        v-model="formRaw.injuryReport.businessTripDetail" />
                     </div>
                   </div>
 
                   <div class="row">
-                    <label class="tiny"><input type="checkbox" id="applyCare" />
-                      申請住院照護補助</label>
+                    <label class="tiny">
+                      <input type="checkbox" id="applyCare" v-model="formRaw.inpatientCareSubsidy.apply" />
+                      申請住院照護補助
+                    </label>
                   </div>
                 </div>
               </div>
@@ -397,7 +448,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import MermaidRenderer from '~/components/MermaidRenderer.vue'
 import { useMermaidChart } from '~/composables/useMermaidChart'
 import PizZip from 'pizzip'
@@ -441,6 +492,95 @@ const fmtDate = (o: { year?: string; month?: string; day?: string } = {}): strin
   safe(o.year) || safe(o.month) || safe(o.day)
     ? `${safe(o.year)} 年 ${safe(o.month)} 月 ${safe(o.day)} 日`
     : ''
+// 🔹 預設一份空表單資料（就是你之前註解掉的 DEFAULT_RAW 那份）
+function createDefaultRaw() {
+  return {
+    insuranceAccident: {
+      injuryCategory: 'occupational_injury',
+      incidentDate: {
+        year: '2025',
+        month: '10',
+        day: '20'
+      }
+    },
+    inabilityPeriod: {
+      from: {
+        year: '2025',
+        month: '10',
+        day: '21'
+      },
+      to: {
+        year: '2025',
+        month: '10',
+        day: '28'
+      }
+    },
+    incomeDuringLeave: {
+      status: 'none',
+      leaveTypes: []
+    },
+    returnToWork: {
+      hasReturned: true,
+      date: {
+        year: '2025',
+        month: '10',
+        day: '29'
+      }
+    },
+    injuryReport: {
+      injuryType: 'on_duty',
+      injuryTypeOther: '',
+      jobContent: '倉庫理貨、上架、包裝、搬運',
+      injuryTime: {
+        hour: '09',
+        minute: '35'
+      },
+      injuryPlace: {
+        locationDesc: '台中市',
+        address: '台北市中正區仁愛路一段 1 號'
+      },
+      causeAndProcess: '用力的時候往後扭到腰，扭傷。',
+      chemicalName: '',
+      businessTripDetail: ''
+    },
+    inpatientCareSubsidy: {
+      apply: false
+    }
+  }
+}
+
+// 🔹 這個就是整張表的「來源資料」
+const formRaw = ref<any | null>(null)
+
+// 進來頁面時，先從 localStorage 抓，如果沒有就用預設
+onMounted(() => {
+  const rawStr = localStorage.getItem('laborAccidentFormRaw')
+  if (rawStr) {
+    try {
+      formRaw.value = JSON.parse(rawStr)
+    } catch (e) {
+      console.error('parse laborAccidentFormRaw failed:', e)
+      formRaw.value = createDefaultRaw()
+    }
+  } else {
+    formRaw.value = createDefaultRaw()
+  }
+
+  // 同時載入 docx 樣板
+  loadTemplate()
+})
+
+// 只要 formRaw 有變，就寫回 localStorage
+watch(
+  formRaw,
+  (val) => {
+    if (val) {
+      localStorage.setItem('laborAccidentFormRaw', JSON.stringify(val))
+    }
+  },
+  { deep: true }
+)
+
 const charts: Record<string, string> = {
   medical: `
     flowchart TB
@@ -593,9 +733,10 @@ const checksMap = ref({
     { id: 3, label: '申辦文件金融資料尚未填寫完成', status: 'error' },
   ],
   sick: [
-    { id: 1, label: '醫師休養證明', status: 'ok' },
-    { id: 2, label: '請假證明已核章', status: 'ok' },
-    { id: 3, label: '薪資資料待核對', status: 'error' },
+    { id: 1, label: '已申請傷病診斷書', status: 'ok' },
+    { id: 4, label: '申辦文件職災資訊已填寫完成', status: 'ok' },
+    { id: 2, label: '申辦文件個人資料尚未填寫完成', status: 'error' },
+    { id: 3, label: '申辦文件金融資料尚未填寫完成', status: 'error' },
   ],
   default: [
     { id: 1, label: '失能等級尚未評估', status: 'error' },
@@ -633,180 +774,12 @@ function downloadApplicationFile() {
 }
 
 function collectRaw() {
-  // 這份就是照你貼的 HTML 143–548 行做出來的預設值
-  const DEFAULT_RAW = {
-    insuranceAccident: {
-      injuryCategory: 'occupational_injury', // 職業傷害
-      incidentDate: {
-        year: '2025',
-        month: '10',
-        day: '20'
-      }
-    },
-    inabilityPeriod: {
-      from: {
-        year: '2025',
-        month: '10',
-        day: '21'
-      },
-      to: {
-        year: '2025',
-        month: '10',
-        day: '28'
-      }
-    },
-    incomeDuringLeave: {
-      status: 'none',      // 未取得
-      leaveTypes: []       // 都沒勾
-    },
-    returnToWork: {
-      hasReturned: true,   // 是否已恢復工作：有勾
-      date: {
-        year: '2025',
-        month: '10',
-        day: '29'
-      }
-    },
-    injuryReport: {
-      injuryType: 'on_duty',      // 傷害類型：執行職務
-      injuryTypeOther: '',
-      jobContent: '倉庫理貨、上架、包裝、搬運',
-      injuryTime: {
-        hour: '09',
-        minute: '35'
-      },
-      injuryPlace: {
-        locationDesc: '台中市',
-        address: '台北市中正區仁愛路一段 1 號'
-      },
-      causeAndProcess: '用力的時候往後扭到腰，扭傷。',
-      chemicalName: '',
-      businessTripDetail: ''
-    },
-    inpatientCareSubsidy: {
-      apply: false // 「申請住院照護補助」原檔是沒勾
-    }
+  if (!formRaw.value) {
+    throw new Error('formRaw 尚未初始化')
   }
 
-
-  const base = JSON.parse(JSON.stringify(DEFAULT_RAW))
-
-  const injuryCategoryNodes = [
-    ...document.querySelectorAll<HTMLInputElement>('input[name="injuryCategory"]')
-  ]
-  const incidentYear = document.getElementById('incidentYear') as HTMLInputElement | null
-  const incidentMonth = document.getElementById('incidentMonth') as HTMLInputElement | null
-  const incidentDay = document.getElementById('incidentDay') as HTMLInputElement | null
-
-  const fromYear = document.getElementById('fromYear') as HTMLInputElement | null
-  const fromMonth = document.getElementById('fromMonth') as HTMLInputElement | null
-  const fromDay = document.getElementById('fromDay') as HTMLInputElement | null
-  const toYear = document.getElementById('toYear') as HTMLInputElement | null
-  const toMonth = document.getElementById('toMonth') as HTMLInputElement | null
-  const toDay = document.getElementById('toDay') as HTMLInputElement | null
-
-  const incomeStatusNodes = [
-    ...document.querySelectorAll<HTMLInputElement>('input[name="incomeStatus"]')
-  ]
-  const leaveAnnual = document.getElementById('leaveAnnual') as HTMLInputElement | null
-  const leaveRostered = document.getElementById('leaveRostered') as HTMLInputElement | null
-  const leaveFlex = document.getElementById('leaveFlex') as HTMLInputElement | null
-  const leaveShift = document.getElementById('leaveShift') as HTMLInputElement | null
-  const leaveOTComp = document.getElementById('leaveOTComp') as HTMLInputElement | null
-
-  const hasReturned = document.getElementById('hasReturned') as HTMLInputElement | null
-  const returnYear = document.getElementById('returnYear') as HTMLInputElement | null
-  const returnMonth = document.getElementById('returnMonth') as HTMLInputElement | null
-  const returnDay = document.getElementById('returnDay') as HTMLInputElement | null
-
-  const injuryTypeNodes = [
-    ...document.querySelectorAll<HTMLInputElement>('input[name="injuryType"]')
-  ]
-  const injuryTypeOther = document.getElementById('injuryTypeOther') as HTMLInputElement | null
-
-  const jobContent = document.getElementById('jobContent') as HTMLTextAreaElement | null
-  const injuryHour = document.getElementById('injuryHour') as HTMLInputElement | null
-  const injuryMinute = document.getElementById('injuryMinute') as HTMLInputElement | null
-  const placeDesc = document.getElementById('placeDesc') as HTMLInputElement | null
-  const addressLine = document.getElementById('addressLine') as HTMLInputElement | null
-  const causeLine = document.getElementById('causeLine') as HTMLTextAreaElement | null
-  const chemicalNameLine = document.getElementById('chemicalNameLine') as HTMLInputElement | null
-  const businessTripDetailLine = document.getElementById('businessTripDetailLine') as HTMLInputElement | null
-
-  const applyCare = document.getElementById('applyCare') as HTMLInputElement | null
-
-  // === 1. 傷病類別 ===
-  const selectedCategory = injuryCategoryNodes.find(x => x.checked)?.value
-  if (selectedCategory) {
-    base.insuranceAccident.injuryCategory = selectedCategory
-  }
-  if (incidentYear) base.insuranceAccident.incidentDate.year = safe(incidentYear.value) || base.insuranceAccident.incidentDate.year
-  if (incidentMonth) base.insuranceAccident.incidentDate.month = safe(incidentMonth.value) || base.insuranceAccident.incidentDate.month
-  if (incidentDay) base.insuranceAccident.incidentDate.day = safe(incidentDay.value) || base.insuranceAccident.incidentDate.day
-
-  // === 2. 全日不能工作期間 ===
-  if (fromYear) base.inabilityPeriod.from.year = safe(fromYear.value) || base.inabilityPeriod.from.year
-  if (fromMonth) base.inabilityPeriod.from.month = safe(fromMonth.value) || base.inabilityPeriod.from.month
-  if (fromDay) base.inabilityPeriod.from.day = safe(fromDay.value) || base.inabilityPeriod.from.day
-
-  if (toYear) base.inabilityPeriod.to.year = safe(toYear.value) || base.inabilityPeriod.to.year
-  if (toMonth) base.inabilityPeriod.to.month = safe(toMonth.value) || base.inabilityPeriod.to.month
-  if (toDay) base.inabilityPeriod.to.day = safe(toDay.value) || base.inabilityPeriod.to.day
-
-  // === 3. 薪資取得情形 ===
-  const selectedIncome = incomeStatusNodes.find(x => x.checked)?.value
-  if (selectedIncome) {
-    base.incomeDuringLeave.status = selectedIncome
-  }
-
-  const leaveTypes: string[] = []
-  if (leaveAnnual?.checked) leaveTypes.push('annual')
-  if (leaveRostered?.checked) leaveTypes.push('rostered')
-  if (leaveFlex?.checked) leaveTypes.push('flex')
-  if (leaveShift?.checked) leaveTypes.push('shift')
-  if (leaveOTComp?.checked) leaveTypes.push('overtime_comp')
-  // 如果使用者有勾，就覆蓋；沒勾就維持預設（空陣列）
-  if (leaveTypes.length > 0) {
-    base.incomeDuringLeave.leaveTypes = leaveTypes
-  }
-
-  // === 4. 是否已恢復工作 ===
-  if (hasReturned) {
-    base.returnToWork.hasReturned = !!hasReturned.checked
-  }
-  if (returnYear) base.returnToWork.date.year = safe(returnYear.value) || base.returnToWork.date.year
-  if (returnMonth) base.returnToWork.date.month = safe(returnMonth.value) || base.returnToWork.date.month
-  if (returnDay) base.returnToWork.date.day = safe(returnDay.value) || base.returnToWork.date.day
-
-  // === 5. 事故敘述 ===
-  const selectedInjuryType = injuryTypeNodes.find(x => x.checked)?.value
-  if (selectedInjuryType) {
-    base.injuryReport.injuryType = selectedInjuryType
-  }
-  if (injuryTypeOther) {
-    const other = safe(injuryTypeOther.value)
-    base.injuryReport.injuryTypeOther =
-      base.injuryReport.injuryType === 'other' ? other : ''
-  }
-
-  if (jobContent) base.injuryReport.jobContent = safe(jobContent.value) || base.injuryReport.jobContent
-
-  if (injuryHour) base.injuryReport.injuryTime.hour = safe(injuryHour.value) || base.injuryReport.injuryTime.hour
-  if (injuryMinute) base.injuryReport.injuryTime.minute = safe(injuryMinute.value) || base.injuryReport.injuryTime.minute
-
-  if (placeDesc) base.injuryReport.injuryPlace.locationDesc = safe(placeDesc.value) || base.injuryReport.injuryPlace.locationDesc
-  if (addressLine) base.injuryReport.injuryPlace.address = safe(addressLine.value) || base.injuryReport.injuryPlace.address
-
-  if (causeLine) base.injuryReport.causeAndProcess = safe(causeLine.value) || base.injuryReport.causeAndProcess
-  if (chemicalNameLine) base.injuryReport.chemicalName = safe(chemicalNameLine.value) || base.injuryReport.chemicalName
-  if (businessTripDetailLine) base.injuryReport.businessTripDetail = safe(businessTripDetailLine.value) || base.injuryReport.businessTripDetail
-
-  // === 6. 住院照護補助 ===
-  if (applyCare) {
-    base.inpatientCareSubsidy.apply = !!applyCare.checked
-  }
-
-  return base
+  // 深拷貝一份，避免直接動到 reactive 物件
+  return JSON.parse(JSON.stringify(formRaw.value))
 }
 
 function decorate(data: any) {
@@ -985,9 +958,6 @@ function checkstatus(id) {
   const target = list.find(item => item.id === id)
   target.status = 'ok'
 }
-onMounted(() => {
-  loadTemplate()
-})
 </script>
 
 <style scoped>

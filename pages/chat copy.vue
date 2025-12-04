@@ -1,14 +1,17 @@
 <template>
   <div class="page">
+    <!-- 頂部 -->
     <div class="header">
       <div class="JobButton">
         <NuxtLink to="/jobs" class="pill">職缺資訊</NuxtLink>
       </div>
     </div>
 
+    <!-- 對話區 -->
     <div class="chat">
       <div class="messages" ref="messagesEl">
         <div v-for="(m, i) in messages" :key="i" class="msg" :class="m.role">
+          <!-- 輸入中(loading) 效果 -->
           <template v-if="m.typing">
             <div class="typing">
               <span class="dot"></span>
@@ -17,9 +20,11 @@
             </div>
           </template>
 
+          <!-- 一般訊息 -->
           <template v-else>
             <p v-for="(p, j) in m.content.split('\n')" :key="j">{{ p }}</p>
 
+            <!-- 最後一段顯示按鈕 -->
             <div class="actions" v-if="m.isFinal">
               <button class="btn primary" @click="goToBenefits">前往申辦流程圖</button>
             </div>
@@ -31,7 +36,7 @@
       <div v-if="isIntro" class="isIntroTitle">你遇到什麼狀況？</div>
       <div class="inputWrap">
         <input v-model="draft" class="input" placeholder="輸入訊息…" @keydown.enter.prevent="onEnter"
-          @compositionstart="isComposing = true" @compositionend="isComposing = false" :disabled="isBusy" />
+          @compositionstart="isComposing = true" @compositionend="isComposing = false" />
         <button class="iconBtn" @click="send" :disabled="isBusy" aria-label="送出">
           <img src="~/assets/up-lg-svgrepo-com (3).svg" width="18" height="18" alt="送出" />
         </button>
@@ -47,44 +52,6 @@ import { useMermaidChart } from '~/composables/useMermaidChart'
 
 const messages = ref([])
 const draft = ref('')
-
-// 欄位提問優先級定義 (Frontend Control Core)
-const FIELD_PRIORITY = [
-  // 事故基本資訊（高優先級）
-  { key: 'applicant_role', label: '職位', priority: 900 },
-  { key: 'employer_name', label: '雇主名稱', priority: 850 },
-  { key: 'job_content', label: '實際工作內容', priority: 800 },
-  { key: 'insured_status', label: '勞保投保狀態', priority: 750 },
-
-  // 事故與傷害
-  { key: 'accident_date', label: '事故日期', priority: 700 },
-  { key: 'accident_time', label: '事故時間', priority: 690 },
-  { key: 'accident_type', label: '事故發生情況', priority: 650 },
-  { key: 'accident_place', label: '事故大致地點', priority: 600 },
-  { key: 'accident_address', label: '事故詳細地址', priority: 590 },
-
-  // ⚠️ 特別處理：化學物質相關
-  { key: 'exposed_to_chemical', label: '是否接觸化學物質', priority: 550 },
-  { key: 'chemical_name', label: '化學物質名稱', priority: 540 },
-
-  // 醫療與休養
-  { key: 'medical_provider', label: '就醫院所', priority: 500 },
-  { key: 'diagnosis_text', label: '診斷描述', priority: 450 },
-  { key: 'treatment_dates', label: '全日不能工作期間', priority: 400 },
-  { key: 'documents_ready', label: '已備妥文件', priority: 350 },
-
-  // 復工與薪資
-  { key: 'has_returned', label: '是否已恢復工作', priority: 300 },
-  { key: 'return_date', label: '復工日期', priority: 290 },
-  { key: 'income_status', label: '請假期間是否有薪水', priority: 250 },
-  { key: 'inpatient_care_apply', label: '是否申請住院照護補助', priority: 200 },
-]
-
-// 導出所有必須收集的 key 名稱
-const requiredKeys = FIELD_PRIORITY.map(f => f.key)
-// 這些欄位的回答直接由前端寫入，不交給 LLM 處理
-const DIRECT_FILL_KEYS = ['employer_name', 'accident_address', 'job_content']
-
 const DEFAULT_RAW = {
   insuranceAccident: {
     injuryCategory: 'occupational_injury', // 職業傷害（先固定職災）
@@ -107,11 +74,11 @@ const DEFAULT_RAW = {
     }
   },
   incomeDuringLeave: {
-    status: 'none',
-    leaveTypes: []
+    status: 'none',      // 未取得（先給預設，你之後可以改成根據其他欄位判斷）
+    leaveTypes: []       // 這份對話目前沒收集，就先留空
   },
   returnToWork: {
-    hasReturned: false,
+    hasReturned: false,  // 是否已恢復工作：預設 false，之後可接上你的欄位
     date: {
       year: '',
       month: '',
@@ -119,9 +86,9 @@ const DEFAULT_RAW = {
     }
   },
   injuryReport: {
-    injuryType: 'on_duty',
+    injuryType: 'on_duty',      // 傷害類型：執行職務，先預設
     injuryTypeOther: '',
-    jobContent: '',
+    jobContent: '',             // 目前沒有 jobContent 欄位，就先留空
     injuryTime: {
       hour: '',
       minute: ''
@@ -135,11 +102,9 @@ const DEFAULT_RAW = {
     businessTripDetail: ''
   },
   inpatientCareSubsidy: {
-    apply: false
+    apply: false // 「申請住院照護補助」目前對話沒收集，先預設 false
   }
 }
-
-// ✅ 真正用來累積欄位的狀態
 const collectorState = ref({
   applicant_role: '',
   accident_date: '',
@@ -150,31 +115,37 @@ const collectorState = ref({
   insured_status: '',
   medical_provider: '',
   diagnosis_text: '',
-  treatment_dates: [], // 陣列：全日不能工作期間
-  documents_ready: [], // 陣列：已備妥文件
-
-  accident_address: '',
-  chemical_name: '',
-  exposed_to_chemical: null, // true / false
-
+  treatment_dates: [], // 陣列
+  documents_ready: [], // 陣列：例如 ["診斷證明書", "醫療收據"]
   job_content: '',
-  has_returned: null,
-  return_date: '',
-  income_status: 'none',
-  leave_types: [],
-  inpatient_care_apply: false      // true / false
+  has_returned: null,             // true / false
+  return_date: '',                // 'YYYY-MM-DD'
+  income_status: 'none',          // 'none' | 'full' | 'partial'
+  leave_types: [],                // ['普通傷病假', ...]
+  inpatient_care_apply: null      // true / false
 })
-
-
 const lastAskedField = ref('')
-const isIntro = ref(true)
-const scriptStep = ref(0)
+const isIntro = ref(true)       // 尚未「送出」任何訊息 → 輸入框置中
+const scriptStep = ref(0)       // 腳本步驟（目前沒用到，但保留）
 const messagesEl = ref(null)
-const isComposing = ref(false)
+const isComposing = ref(false)  // 中文輸入法組字狀態（避免誤送）
 const router = useRouter()
 const { setChart, setSelected } = useMermaidChart()
 
+// 目前已不再使用 scriptedReplies，但保留不動
+const scriptedReplies = [
+  '請問您是什麼時候受傷的呢？',
+  '好的，10月10號受傷的，\n\n請問這段期間公司有照常發薪水嗎？還是只有部分薪？\n另外您計畫約什麼時候復工呢？',
+  '了解，您在受傷期間是取得部分薪資，並且已經10月20號復工，\n\n請問你事後有前往就醫取得診斷證明嗎?有住院嗎?',
+  '收到，已取得診斷證明，並且有住院，\n\n請問住院時醫生是否評估在住院期間無法自理呢?',
+  '太好了，這樣可以一併申請住院照護補助，\n\n另外想請您補充一下當時的工作內容是什麼、受傷的地點大概在哪裡、以及發生的時間？',
+  '了解，您是在倉庫理貨、上架、包裝、搬運，在倉庫A區走道受傷，時間是早上10點，\n\n請問是怎麼受傷的呢?',
+  '請問發生的地址是在那裡呢?是處於公出的情況嗎?\n並且在發生當下是否接觸化學物質?',
+  '太好了，那您基本符合職災補助申請資格！\n我會根據您提供的資訊，產生預填文件與申請流程圖，\n並整理需要準備的文件與注意事項給您。'
+]
+
 const isBusy = computed(() => messages.value.some(m => m.typing))
+const canSend = computed(() => !isBusy.value && draft.value.trim().length)
 
 function onEnter() {
   if (isBusy.value) return
@@ -224,12 +195,14 @@ async function callLmAndParse(payloadMessages, maxRetry = 2) {
         }
       })
 
+      // 🆕 先拿出 message，兼容 structured output
       const msg = response?.choices?.[0]?.message
       if (!msg) {
         throw new Error('LM 回傳內容沒有 message')
       }
 
-      // 若 LM Studio 有 structured output，優先使用
+      // 🆕 如果 LM Studio 有照 OpenAI 一樣給 parsed，就直接用
+      // （沒有的話 parsed 會是 undefined，就會走原本的 content 流程）
       // @ts-ignore
       if (msg.parsed && typeof msg.parsed === 'object') {
         return msg.parsed
@@ -252,218 +225,165 @@ async function callLmAndParse(payloadMessages, maxRetry = 2) {
   throw new Error('JSON 解析失敗')
 }
 
-// 📌 核心輔助函式：檢查特定欄位是否已被有效填寫 (供 allFilled 和 missing 判斷使用)
-function isFieldEffectivelyFilled(state, key) {
-  const v = state[key]
 
-  // 1. 條件性判斷（若未復工或未接觸化學物質，則相關欄位允許為空）
-  if (key === 'return_date' && state.has_returned === false) return true
-  if (key === 'chemical_name' && (state.exposed_to_chemical === false || state.exposed_to_chemical === null)) {
-    return v === '無' || v.trim() === '' || v === '未接觸化學物質'
-  }
-  // 排除已填寫 exposed_to_chemical = true 但 chemical_name 為空的情況
-  if (key === 'chemical_name' && state.exposed_to_chemical === true && v.trim() === '') {
-    return false
-  }
-
-  // 2. 陣列欄位 (treatment_dates, documents_ready)
-  if (Array.isArray(v)) {
-    return v.length > 0
-  }
-  // 3. 字串欄位
-  if (typeof v === 'string') {
-    return v.trim() !== ''
-  }
-  // 4. 布林值欄位 (has_returned, exposed_to_chemical, inpatient_care_apply)
-  if (typeof v === 'boolean') {
-    return true // true / false 都代表已填寫
-  }
-
-  // 排除 null / undefined 的情況
-  return v !== null && v !== undefined
-}
 
 async function replyForCurrentStep(userText, typingIndex) {
-  // 0. 移除上輪問的欄位 (不再需要：這應該交給 LLM 解析來覆寫)
-  // const answer = userText.trim()
-  // const key = lastAskedField.value
-  // if (answer && key) { ... } // 移除此處邏輯
+  // 🆕 0. 先把「上一輪問的欄位」用這一輪的回答填回去（除了日期欄位）
   const answer = userText.trim()
   const key = lastAskedField.value
-  const prevState = JSON.parse(JSON.stringify(collectorState.value))
-
-  // 🔹 公司名稱 / 事故地址(公司地址) / 實際工作 → 直接前端寫入，不打 LLM
-  if (answer && key && DIRECT_FILL_KEYS.includes(key)) {
-    collectorState.value[key] = answer
+  if (answer && key) {
     const state = collectorState.value
 
-    const allFilled = requiredKeys.every((k) => isFieldEffectivelyFilled(state, k))
-    const done = allFilled
-
-    const missingFields = FIELD_PRIORITY
-      .filter(field => !isFieldEffectivelyFilled(state, field.key))
-      .map(field => field.key)
-
-    const nextField = !done && missingFields.length > 0 ? missingFields[0] : ''
-    lastAskedField.value = nextField || ''
-
-    let nextQForFrontend = ''
-    if (!done && nextField) {
-      if (nextField === 'treatment_dates') {
-        nextQForFrontend =
-          '請問您因為受傷『完全無法上班』的期間，是從哪一天到哪一天？請用 YYYY-MM-DD ~ YYYY-MM-DD 回答，如果只有一天就填同一天。'
-      } else if (nextField === 'employer_name') {
-        nextQForFrontend = '請問你現在是在哪一家公司工作？（例如：○○餐飲有限公司）'
-      } else if (nextField === 'accident_address') {
-        nextQForFrontend = '請問事故發生的公司地址是？（例如：台北市○○區○○路 123 號）'
-      } else if (nextField === 'insured_status') {
-        nextQForFrontend = '請問你在這份工作有投保勞工保險嗎？（可以回答：有／沒有）'
-      } else if (nextField === 'has_returned') {
-        nextQForFrontend = '請問你現在已經有回去原本的工作崗位上班了嗎？（可以回答：有／還沒有）'
-      } else if (nextField === 'return_date') {
-        nextQForFrontend = '請問您復工的日期是哪一天呢？（請用 YYYY-MM-DD 格式回答）'
-      } else if (nextField === 'documents_ready') {
-        nextQForFrontend = '請問您目前已經準備好哪些文件了？（例如：診斷證明書、醫療收據）'
-      } else if (nextField === 'accident_time') {
-        nextQForFrontend = '請問事故發生的時間是？（請用 24 小時制，例如：14:00、09:30）'
-      } else if (nextField === 'income_status') {
-        nextQForFrontend = '在你因受傷不能上班、請假的這段期間，公司有照發薪水嗎？（可以回答：完全沒有薪水／有照領全薪／只有部分薪水）'
-      } else if (nextField === 'inpatient_care_apply') {
-        nextQForFrontend = '這次受傷有住院嗎？如果你有住院，你有考慮申請住院照護補助嗎？（可以回答：有／沒有／不需要）'
-      } else if (nextField === 'exposed_to_chemical') {
-        nextQForFrontend = '請問您這次受傷是否有接觸到化學藥劑或毒氣呢？（請回答：有／沒有）'
-      } else if (nextField === 'chemical_name' && state.exposed_to_chemical === true) {
-        nextQForFrontend = '請問您接觸到的化學物質名稱是什麼？（請盡量提供精確名稱，例如：甲苯、氫氟酸）'
-      } else {
-        const label = FIELD_PRIORITY.find(f => f.key === nextField)?.label || nextField
-        nextQForFrontend = `請問您的${label}是？`
+    // 0-1. 若上一題是事故日期，且使用者已給 YYYY-MM-DD，就直接寫入，不用等模型
+    if (key === 'accident_date') {
+      const iso = /^(\d{4})-(\d{2})-(\d{2})$/.test(answer)
+      if (iso) {
+        state.accident_date = answer
       }
     }
-
-    // 🔹 下面 summary + displayText 部分，沿用你現在的邏輯就可以
-    const fieldLabels = FIELD_PRIORITY.reduce((acc, curr) => {
-      acc[curr.key] = curr.label
-      return acc
-    }, {})
-
-    const parsedSummary = []
-    Object.keys(state).forEach((k) => {
-      const label = fieldLabels[k]
-      if (!label) return
-      const before = prevState[k]
-      const after = state[k]
-      let changed = false
-      if (Array.isArray(after)) {
-        changed = JSON.stringify(before || []) !== JSON.stringify(after || [])
-      } else {
-        changed = (before || '') !== (after || '')
+    // 0-2. 其它欄位（除了 treatment_dates），直接寫入使用者原文
+    else if (key !== 'treatment_dates') {
+      if (Array.isArray(state[key])) {
+        // 像 documents_ready 這種陣列欄位，就把使用者回答當成一筆放進去
+        state[key] = Array.from(new Set([...state[key], answer]))
+      } else if (typeof state[key] === 'string') {
+        state[key] = answer
       }
-      if (!changed) return
-      if (Array.isArray(after) && after.length > 0) {
-        parsedSummary.push(`${label}：${after.join('、')}`)
-      } else if (typeof after === 'string' && after.trim() !== '') {
-        parsedSummary.push(`${label}：${after.trim()}`)
-      } else if (typeof after === 'boolean') {
-        parsedSummary.push(`${label}：${after ? '是' : '否'}`)
-      }
-    })
-
-    let displayText = ''
-    if (!done) {
-      const summaryPart = parsedSummary.length
-        ? `我先幫你整理一下目前的資訊：\n${parsedSummary.join('\n')}\n\n`
-        : ''
-      const questionPart = nextQForFrontend || '如果你還有其他想補充的，也可以直接跟我說。'
-      displayText = summaryPart + questionPart
-    } else {
-      // ...（這裡用你原本 done 時那一段邏輯）
-      // 產 formRaw、寫 localStorage、算 benefits、setChart ...
     }
-
-    // ...上面 displayText 已經算好了
-
-    const finalText = displayText
-    const delay = typingDelay(finalText, scriptStep.value)  // 用你下面定義的 typingDelay
-
-    setTimeout(() => {
-      messages.value[typingIndex] = {
-        role: 'assistant',
-        content: finalText,
-        isFinal: done,
-      }
-
-      scriptStep.value++
-      nextTick().then(scrollToBottom)
-    }, delay)
-
-    return // ⬅ 這輪完全不打 LLM
-
   }
 
   const systemPrompt = `
-你是一個專門從使用者輸入中「提取」並「標準化」職災補助資料的 JSON 提取器。
-你的唯一任務：
-1. 根據 <user_input>，從現有的 <state> 中，**只**提取、更新或更正使用者本輪提供的資訊。
-2. **嚴禁臆測和幻想。** 如果資訊不完整（例如：只有「昨天」沒有完整日期），必須寫入 relative_time，不得填入 state.accident_date。
-3. 必須將模糊語氣（如：大概、左右）視為有效資訊並完成標準化（例如：大概下午兩點 -> "14:00"）。
-4. **你不需要決定** missing 欄位或 next_questions，這些交給前端處理。
+你是一個「逐輪收集申請職災補助資料的 JSON 填寫機器人」。
 
-【強制輸出格式】
-- 只能輸出「合法 JSON」，不能加任何開頭語、Markdown、自然語言敘述。
-- JSON 結構必須符合以下 schema：
+任務流程：
+1. 解析 <user_input> 與 <state>。
+2. 以輸入的 state 為目前的「真實欄位狀態」，只在 user_input 明確更正或否認時才覆寫。
+3. 只使用本輪敘述或可推算的相對日期更新欄位，不得臆測。
+4. 判斷可申請補助類型（醫療給付／傷病給付／失能給付）。
+5. 根據 state 找出仍需補問的欄位（missing），missing 中只能放「尚未填寫或仍不清楚」的欄位名稱。
+6. 每輪只問 missing 中優先度最高的一個欄位，將提問內容放入 next_questions。
+7. 若資訊已足以完成補助判定，則：
+   - done = true
+   - missing = []
+   - next_questions = [""]
+
+【強制輸出】
+- 只能輸出「合法 JSON」，不能加任何開頭語、Markdown、自然語言敘述。只要 JSON。
+- 若有非 JSON 內容，應丟棄並改輸出合法 JSON。
+- JSON 結構與型別必須符合以下 schema：
+
 {
-  "user_input_zh": "使用者原始輸入（繁體中文）",
-  "benefit_types": ["醫療給付", "傷病給付"], // 請根據輸入判斷，最多填三種
-  "state": {
-    /* 包含所有欄位，請嚴格按照型別要求填充，若無資訊，請維持空字串 "" 或 null */
-    "applicant_role": "職位",
-    "accident_date": "YYYY-MM-DD",
-    "accident_time": "HH:mm",
-    "accident_place": "事故發生地點描述（例如：倉庫、工地、廠房等）",
-    "accident_address": "事故發生詳細地址（如：台中市北區大新路 xx 號）",
-    "accident_type": "事故發生情況描述",
-    "employer_name": "公司名稱描述",
-    "insured_status": "是否投保勞保狀態（有/沒有）",
-    "medical_provider": "就醫院所名稱",
-    "diagnosis_text": "診斷或傷病描述",
-    "treatment_dates": ["YYYY-MM-DD"],  
-    "documents_ready": ["診斷證明書", "醫療收據"], 
-    "job_content": "實際工作內容",
-    "has_returned": true, 
-    "return_date": "YYYY-MM-DD",
-    "exposed_to_chemical": true, 
-    "chemical_name": "接觸的化學物質名稱（若無則為「無」）",
-    "income_status": "none | full | partial",
-    "leave_types": ["annual", "rostered", "flex", "shift", "overtime_comp"],
-    "inpatient_care_apply": true 
-  },
-  "relative_time": { // 處理相對日期的專用區塊
-    "accident_date": null 或 { "expression": "上週二", "days_offset": -7 },
-    "treatment_dates": [
-      { "expression": "昨天晚上去急診", "days_offset": -1 }
-    ]
-  },
-  "notes": ["其它備註，或模型內部判斷補充"]
+  "user_input_zh": "使用者原始輸入（繁體中文）",
+  "benefit_types": ["醫療給付", "傷病給付"],
+  "state": {
+    "applicant_role": "申請人身分",
+    "accident_date": "YYYY-MM-DD",
+    "accident_time": "HH:mm",
+    "accident_place": "事故發生地點描述",
+    "accident_type": "事故發生情況描述",
+    "employer_name": "雇主名稱或店名",
+    "insured_status": "勞保投保狀態描述",
+    "medical_provider": "就醫院所名稱",
+    "diagnosis_text": "診斷或傷病描述",
+    "treatment_dates": ["YYYY-MM-DD"],
+    "documents_ready": ["診斷證明書", "醫療收據"]
+  },
+  "relative_time": {
+    "accident_date": null 或 {
+      "expression": "上週二",
+      "days_offset": -7
+    },
+    "treatment_dates": [
+      {
+        "expression": "昨天晚上去急診",
+        "days_offset": -1
+      }
+    ]
+  },
+  "missing": ["applicant_role", "accident_date"],
+  "next_questions": ["請問事故是發生在什麼日期？（請用 YYYY-MM-DD，例如：2025-11-25）"],
+  "done": false,
+  "done_message": "簡短說明已蒐集完畢與可申請的補助種類（若 done = true 時才需要有內容）",
+  "notes": ["其它備註，或模型內部判斷補充"]
 }
 
-【核心提取規則】
-- 嚴格禁止生成 <state> 中不存在的資訊。若無法確定，必須為空字串 "" 或 null。
-- **日期/時間約束：**
-  - **accident_date** 必須是完整的 YYYY-MM-DD 格式，否則為空字串 ""。相對日期必須只寫入 **relative_time**。
-  - **accident_time** 必須是 HH:mm 格式的 24 小時制時間字串。即使使用者說「大概下午兩點」、「約下午 2 點左右」，仍應填入 "14:00"。
-- **文件標準化（必須遵守）：** documents_ready 只能使用標準名稱，例如：「診斷證明書」、「醫療收據」、「身分證影本」、「勞保投保資料」。
-- **化學物質約束：**
-  - exposed_to_chemical：若使用者明確說「有」，則為 true；「沒有」，則為 false。
-  - chemical_name：若 exposed_to_chemical 為 true，請進一步拆解使用者輸入的內容並填入名稱；若為 false，請填入「無」。
-- **Benefit Types 判斷：** 依照輸入判斷是否包含： "醫療給付"、"傷病給付"、"失能給付"。
-- **其他約束：**
-  - **insured_status** 若使用者明確說「有」，則為 true；「沒有」，則為 false。
-  - **inpatient_care_apply** 若使用者說「有」，則為 true；「沒有」，則為 false。
-  - **accident_place** 僅需「大致地點」描述（例如：倉庫、工地）。
-  - **accident_address** 直接返回使用者的輸入即可。
-  - **employer_name** 直接返回使用者的輸入即可。
-- state 中已經有「非空值」的欄位，除非本輪 user_input 明確說「前面填錯、要改」，否則不應改變。
+【欄位與型別要求】
+- benefit_types 的每一個元素只能是下列三種字串之一：
+  - "醫療給付"
+  - "傷病給付"
+  - "失能給付"
+- state.treatment_dates：陣列，每個元素是字串（前端會自行檢查是否為 YYYY-MM-DD）。
+- state.documents_ready：陣列，每個元素是字串，例如「診斷證明書」、「醫療收據」。
+- relative_time.accident_date：
+  - 可以是 null，代表沒有相對日期資訊。
+  - 或是一個物件 { "expression": "...", "days_offset": 整數 }。
+- relative_time.treatment_dates：陣列，每個元素是 { "expression": 字串, "days_offset": 整數 }。
+
+【解析規則】
+- 嚴禁生成姓名或稱呼（不可寫王先生／林小姐）。
+- 嚴禁生成不存在的資訊，未知欄位用空字串 ""。
+- state 中已經有「非空值」的欄位，通常視為已蒐集完成：
+  - 不要再把這些欄位放進 missing。
+  - 不要再針對這些欄位出題，除非本輪 user_input 明確說「前面填錯、要改」。
+- accident_place = 事故地點；medical_provider = 就醫地點，不可混用。
+- 就醫時間 ≠ 事故時間。
+- 事故時間需有明確數字（如「晚上8點」→ "20:00"）。只有「晚上」、「早上」等模糊字不能直接填入 accident_time。
+- 只有出現完整日期（含年份或可推算出年份）才填 accident_date / treatment_dates。
+- 相對日期（昨天、上週二、前天、兩天後等）填入 relative_time：
+  { "expression": "上週二", "days_offset": -7 }  // days_offset 必須是相對於「今天」的整數
+- treatment_dates 的相對日期一律放在 relative_time.treatment_dates。
+- benefit_types 判斷規則：
+  - 有「醫院、急診、就醫」→ 包含 "醫療給付"
+  - 有「受傷、請假、休養、無法工作」→ 包含 "傷病給付"
+  - 有「失能、永久損傷、功能無法恢復」→ 包含 "失能給付"
+- 不須說明分析過程，只需給出結果。
+
+【missing 欄位順序與內容】
+- missing 必須是下列 key 名稱的子集合（字串陣列）：
+  [
+    "applicant_role",
+    "accident_date",
+    "accident_time",
+    "accident_place",
+    "accident_type",
+    "employer_name",
+    "insured_status",
+    "medical_provider",
+    "diagnosis_text",
+    "treatment_dates",
+    "documents_ready"
+  ]
+- 欄位已經在 state 中有合理的非空值時，不得再放進 missing。
+- 如果所有上述欄位都已填好，missing 應該是空陣列 []。
+
+【提問規則】
+- next_questions 必為長度 1 的陣列。
+- 問題要「只問 missing 中第一個欄位」，不得同時問兩個。
+- 問句要具體清楚並附範例
+
+【完成條件（非常重要）】
+- 以下欄位都有合理的非空值時，代表資料已足以進行補助項目判定，必須將 done 設為 true：
+  - applicant_role
+  - accident_date
+  - accident_time
+  - accident_place
+  - accident_type
+  - employer_name
+  - insured_status
+  - medical_provider
+  - diagnosis_text
+  - treatment_dates        // 至少要有一個就醫或住院日期
+  - documents_ready        // 若使用者明確表示「目前沒有相關文件」，可填空陣列 []
+- 只要上述欄位皆已填寫完成，請務必：
+  - done = true
+  - missing = []
+  - next_questions = [""]
+  - done_message 填入一段簡短中文說明：已完成資料蒐集，以及可申請的補助種類。
 `.trim()
+
+
+  // 1. 備份 state（用來做這一輪變更摘要）
+  const prevState = JSON.parse(JSON.stringify(collectorState.value))
 
   const payloadMessages = [
     { role: 'system', content: systemPrompt },
@@ -487,53 +407,38 @@ ${userText}
     const state = collectorState.value
     const newState = result.state || {}
 
-    // 2. 用 LM 回傳的 state 覆寫 / 合併 (前端守門)
+    // 2. 用 LM 回傳的 state 覆寫 / 合併
     Object.keys(state).forEach((key) => {
       const newVal = newState[key]
 
-      // 📌 守門核心：如果 LM 傳來空值（"" 或 null），則不覆蓋現有的非空值
-      const isNewValueEmpty = newVal === '' || newVal === null || (Array.isArray(newVal) && newVal.length === 0)
-      if (isNewValueEmpty && isFieldEffectivelyFilled(prevState, key)) {
-        // 如果新值是空的，且舊值是有效的，則保留舊值（防止 LLM 亂清資料）
+      // 🆕 特別規則：treatment_dates 交給 relative_time 處理，不吃模型直接給的實際日期
+      if (key === 'treatment_dates') {
         return
       }
 
-      // 陣列欄位（例如 treatment_dates, documents_ready, leave_types）
       if (Array.isArray(state[key])) {
         if (Array.isArray(newVal)) {
-          const merged = [...state[key], ...newVal].filter((v) => v !== '')
+          const merged = [...state[key], ...newVal].filter((v) => v !== "")
           state[key] = Array.from(new Set(merged))
         }
-      }
-      // boolean 欄位
-      else if (typeof state[key] === 'boolean' || state[key] === null) {
-        if (typeof newVal === 'boolean') {
-          state[key] = newVal
-        }
-      }
-      // 其他一律當字串處理 (包含覆蓋字串)
-      else if (typeof newVal === 'string') {
+      } else if (typeof newVal === 'string') {
         state[key] = newVal.trim()
       }
     })
 
-
     // 2-b. relative_time → 轉成實際日期
     const relativeTime = result.relative_time || { accident_date: null, treatment_dates: [] }
     const today = new Date()
+
+    // 🆕 先記下「上一輪」是否已經有 treatment_dates
     const hadTreatmentBefore =
       Array.isArray(prevState.treatment_dates) && prevState.treatment_dates.length > 0
 
-    if (scriptStep.value === 0) {
-      state.treatment_dates = Array.isArray(prevState.treatment_dates)
-        ? prevState.treatment_dates
-        : []
-    }
     // 事故日期：如果 state 還是空，且有 days_offset，就算出真正日期
     if (
       !state.accident_date &&
       relativeTime.accident_date &&
-      typeof relativeTime.accident_date.days_offset === 'number'
+      typeof relativeTime.accident_date.days_offset === "number"
     ) {
       const dateStr = calcDateFromOffset(relativeTime.accident_date.days_offset, today)
       if (dateStr) {
@@ -541,17 +446,16 @@ ${userText}
       }
     }
 
-    // 就醫 / 住院日期：只在「之前完全沒有任何 treatment_dates」時，才處理一次
+    // 🆕 就醫 / 住院日期：只在「之前完全沒有任何 treatment_dates」時，才處理一次
     if (
-      scriptStep.value > 0 &&
       !hadTreatmentBefore &&
       Array.isArray(relativeTime.treatment_dates) &&
       relativeTime.treatment_dates.length > 0
     ) {
       const extraDates = relativeTime.treatment_dates
-        .filter((item) => item && typeof item.days_offset === 'number')
+        .filter((item) => item && typeof item.days_offset === "number")
         .map((item) => calcDateFromOffset(item.days_offset, today))
-        .filter((d) => d !== '')
+        .filter((d) => d !== "")
 
       if (extraDates.length > 0) {
         const merged = [...state.treatment_dates, ...extraDates]
@@ -559,61 +463,67 @@ ${userText}
       }
     }
 
-    // 📌 3. 前端流程控制核心：判斷是否完成，並決定下一個問題
 
-    // 判斷是否所有欄位都已填寫
-    const allFilled = requiredKeys.every((key) => isFieldEffectivelyFilled(state, key))
-    let done = allFilled
-    let nextQForFrontend = ''
 
-    if (!done) {
-      // 找出所有缺漏的欄位 (按優先級排序)
-      const missingFields = FIELD_PRIORITY
-        .filter(field => !isFieldEffectivelyFilled(state, field.key))
-        .map(field => field.key)
+    // 先讀模型給的 done / next_questions
+    let done = !!result.done
+    const nextQ = Array.isArray(result.next_questions) ? result.next_questions[0] || "" : ""
 
-      // 決定下一個要問的欄位
-      const nextField = missingFields[0]
-      lastAskedField.value = nextField || ''
+    // 讀取 missing
+    const missing = Array.isArray(result.missing) ? result.missing : []
 
-      // 🚩 根據 nextField 決定提問內容 (取代 LLM 的 next_questions)
-      if (nextField) {
-        if (nextField === 'treatment_dates') {
-          nextQForFrontend =
-            '請問您因為受傷『完全無法上班』的期間，是從哪一天到哪一天？請用 YYYY-MM-DD ~ YYYY-MM-DD 回答，如果只有一天就填同一天。'
-        } else if (nextField === 'employer_name') {
-          nextQForFrontend = '請問你現在是在哪一家公司工作？（例如：○○餐飲有限公司）'
-        } else if (nextField === 'insured_status') {
-          nextQForFrontend = '請問你在這份工作有投保勞工保險嗎？（可以回答：有／沒有）'
-        } else if (nextField === 'has_returned') {
-          nextQForFrontend = '請問你現在已經有回去原本的工作崗位上班了嗎？（可以回答：有／還沒有）'
-        } else if (nextField === 'return_date') {
-          nextQForFrontend = '請問您復工的日期是哪一天呢？（請用 YYYY-MM-DD 格式回答）'
-        } else if (nextField === 'documents_ready') {
-          nextQForFrontend = '請問您目前已經準備好哪些文件了？（例如：診斷證明書、醫療收據）'
-        } else if (nextField === 'accident_time') {
-          nextQForFrontend = '請問事故發生的時間是？（請用 24 小時制，例如：14:00、09:30）'
-        } else if (nextField === 'income_status') {
-          nextQForFrontend = '在你因受傷不能上班、請假的這段期間，公司有照發薪水嗎？（可以回答：完全沒有薪水／有照領全薪／只有部分薪水）'
-          // } else if (nextField === 'inpatient_care_apply') {
-          //   nextQForFrontend = '這次受傷有住院嗎？'
-        } else if (nextField === 'exposed_to_chemical') {
-          nextQForFrontend = '請問您這次受傷是否有接觸到化學藥劑或毒氣呢？（請回答：有／沒有）'
-        } else if (nextField === 'chemical_name' && state.exposed_to_chemical === true) {
-          nextQForFrontend = '請問您接觸到的化學物質名稱是什麼？（請盡量提供精確名稱，例如：甲苯、氫氟酸）'
-        } else {
-          const label = FIELD_PRIORITY.find(f => f.key === nextField)?.label || nextField
-          nextQForFrontend = `請問您的${label}是？`
-        }
+    // 🆕 前端補一層檢查：如果所有必要欄位都有值，就強制視為蒐集完成
+    const requiredKeys = [
+      "applicant_role",
+      "accident_date",
+      "accident_time",
+      "accident_place",
+      "accident_type",
+      "employer_name",
+      "insured_status",
+      "medical_provider",
+      "diagnosis_text",
+      "treatment_dates",
+      "documents_ready",
+    ]
+
+    const allFilled = requiredKeys.every((key) => {
+      const v = state[key]
+      if (Array.isArray(v)) {
+        return v.length > 0
       }
+      if (typeof v === "string") {
+        return v.trim() !== ""
+      }
+      return !!v
+    })
+
+    if (allFilled) {
+      done = true
     }
 
+    // 🆕 如果前端判斷 done = true，就把 missing 清空，避免你下一輪還看到舊的 missing
+    const effectiveMissing = done ? [] : missing
 
-    // 4. 算出「這一輪新增或變更的欄位」摘要
-    const fieldLabels = FIELD_PRIORITY.reduce((acc, curr) => {
-      acc[curr.key] = curr.label
-      return acc
-    }, {})
+    // 🆕 記住下一輪要問哪個欄位：effectiveMissing 裡的第一個
+    const nextField = !done && effectiveMissing.length > 0 ? effectiveMissing[0] : ""
+    lastAskedField.value = nextField || ""
+
+
+    // 3. 算出「這一輪新增或變更的欄位」摘要
+    const fieldLabels = {
+      applicant_role: "申請人身分",
+      accident_date: "事故日期",
+      accident_time: "事故時間",
+      accident_place: "事故地點",
+      accident_type: "事故發生情況",
+      employer_name: "雇主名稱",
+      insured_status: "勞保投保狀態",
+      medical_provider: "就醫院所",
+      diagnosis_text: "診斷或傷病描述",
+      treatment_dates: "就醫/住院日期",
+      documents_ready: "已備妥文件",
+    }
 
     const parsedSummary = []
 
@@ -628,26 +538,23 @@ ${userText}
       if (Array.isArray(after)) {
         changed = JSON.stringify(before || []) !== JSON.stringify(after || [])
       } else {
-        changed = (before || '') !== (after || '')
+        changed = (before || "") !== (after || "")
       }
 
       if (!changed) return
 
       if (Array.isArray(after) && after.length > 0) {
-        parsedSummary.push(`${label}：${after.join('、')}`)
-      } else if (typeof after === 'string' && after.trim() !== '') {
+        parsedSummary.push(`${label}：${after.join("、")}`)
+      } else if (typeof after === "string" && after.trim() !== "") {
         parsedSummary.push(`${label}：${after.trim()}`)
-      } else if (typeof after === 'boolean') {
-        parsedSummary.push(`${label}：${after ? '是' : '否'}`)
       }
-
     })
 
     // 若這輪只有相對日期，也補一句說明
     if (
       relativeTime.accident_date &&
-      typeof relativeTime.accident_date.days_offset === 'number' &&
-      !parsedSummary.some((line) => line.startsWith('事故日期'))
+      typeof relativeTime.accident_date.days_offset === "number" &&
+      !parsedSummary.some((line) => line.startsWith("事故日期"))
     ) {
       parsedSummary.push(
         `事故日期：已依「${relativeTime.accident_date.expression}」換算為 ${state.accident_date}`,
@@ -655,56 +562,51 @@ ${userText}
     }
 
     if (
-      !hadTreatmentBefore &&
+      !hadTreatmentBefore && // 🆕 之前完全沒資料時才顯示
       Array.isArray(relativeTime.treatment_dates) &&
       relativeTime.treatment_dates.length > 0
     ) {
       const desc = relativeTime.treatment_dates
         .map((item) => item.expression)
         .filter(Boolean)
-      if (desc.length > 0 && !parsedSummary.some((line) => line.startsWith('就醫/住院日期'))) {
-        parsedSummary.push(`就醫/住院相對日期：${desc.join('、')}`)
+      if (desc.length > 0 && !parsedSummary.some((line) => line.startsWith("就醫/住院日期"))) {
+        parsedSummary.push(`就醫/住院相對日期：${desc.join("、")}`)
       }
     }
 
-    // 5. 組合要顯示給使用者的文字
-    let displayText = ''
+
+    // 4. 組合要顯示給使用者的文字（把語氣稍微柔一點）
+    // 4. 組合要顯示給使用者的文字（把語氣稍微柔一點）
+    let displayText = ""
 
     if (!done) {
       const summaryPart = parsedSummary.length
-        ? `我先幫你整理一下目前的資訊：\n${parsedSummary.join('\n')}\n\n`
-        : ''
-      const questionPart = nextQForFrontend || '如果你還有其他想補充的，也可以直接跟我說。'
+        ? `我先幫你整理一下目前的資訊：\n${parsedSummary.join("\n")}\n\n`
+        : ""
+      const questionPart = nextQ || "如果你還有其他想補充的，也可以直接跟我說。"
 
       displayText = summaryPart + questionPart
     } else {
       const summaryPart = parsedSummary.length
-        ? `目前幫你整理到的重點是：\n${parsedSummary.join('\n')}\n\n`
-        : ''
+        ? `目前幫你整理到的重點是：\n${parsedSummary.join("\n")}\n\n`
+        : ""
 
       const benefits = analyzeEligibleBenefits(messages.value)
-      const benefitNames = benefits.map((b) => `・${b.name}`).join('\n')
+      const benefitNames = benefits.map((b) => `・${b.name}`).join("\n")
       const benefitsPart = benefits.length
         ? `依照你目前的敘述，初步看起來可以申請的補助項目包含：\n${benefitNames}\n\n`
-        : '依照你目前的敘述，初步可以幫你評估職災相關的補助項目。\n\n'
+        : "依照你目前的敘述，初步可以幫你評估職災相關的補助項目。\n\n"
 
       const tail =
-        '接下來我會根據這些資料，幫你整理申請流程圖與需要準備的文件，你也可以點下方的按鈕查看詳細流程。'
+        "接下來我會根據這些資料，幫你整理申請流程圖與需要準備的文件，你也可以點下方的按鈕查看詳細流程。"
 
       displayText = summaryPart + benefitsPart + tail
 
-      // ✅★★★ 收集完成：產生標準表單 JSON + 存到 localStorage + 更新 Mermaid store ★★★
+      // 🆕★★★ 這裡開始：資料已收集完成 → 產生標準表單 JSON + 更新 Mermaid store ★★★
       const formRaw = buildFormRawFromState(state)
-      console.log('✅ formRaw 準備送去產檔 / 後端：', formRaw)
-      console.log('✅ collectorState 已完成：', state)
+      console.log("✅ formRaw 準備送去產檔 / 後端：", formRaw)
 
-      if (typeof window !== 'undefined') {
-        // 存一份原始收集狀態
-        localStorage.setItem('laborAccidentCollectorState', JSON.stringify(state))
-        // 存一份最終表單結構
-        localStorage.setItem('laborAccidentFormRaw', JSON.stringify(formRaw))
-      }
-
+      // 如果你希望流程圖頁也能一起拿到 formRaw，可以塞進 setChart 的 meta 裡
       const chart = buildMermaidChart(messages.value)
 
       if (benefits.length > 0) {
@@ -714,24 +616,27 @@ ${userText}
       setChart(chart, {
         generatedAt: Date.now(),
         eligibleBenefits: benefits,
-        formRaw,
+        formRaw, // ← 重要：這樣 goToBenefits 進去就可以從 composable 拿到這顆 JSON
       })
     }
 
     messages.value[typingIndex] = {
-      role: 'assistant',
+      role: "assistant",
       content: displayText,
       isFinal: done,
     }
 
+
     scriptStep.value = scriptStep.value + 1
     nextTick().then(scrollToBottom)
+
+    console.log("collectorState:", collectorState.value)
   } catch (err) {
-    console.error('LM 回覆錯誤：', err)
+    console.error("LM 回覆錯誤：", err)
 
     messages.value[typingIndex] = {
-      role: 'assistant',
-      content: '目前系統解析回覆時發生錯誤，請再描述一次或稍後重試。',
+      role: "assistant",
+      content: "目前系統解析回覆時發生錯誤，請再描述一次或稍後重試。",
       isFinal: false,
     }
 
@@ -739,11 +644,51 @@ ${userText}
   }
 }
 
-/** 小工具們 **/
+
+/**
+ * 以下 helper 原本的邏輯保持不變
+ */
+
+function queueTypingAndReply(text, isFinal = false, done, existingIndex) {
+  let index = existingIndex
+
+  if (typeof index !== 'number') {
+    index = messages.value.length
+    messages.value.push({ role: 'assistant', typing: true, step: scriptStep.value })
+  } else {
+    messages.value[index] = { role: 'assistant', typing: true, step: scriptStep.value }
+  }
+
+  scrollToBottom(true)
+
+  const delay = typingDelay(text, scriptStep.value)
+
+  setTimeout(() => {
+    messages.value[index] = {
+      role: 'assistant',
+      content: text,
+      isFinal
+    }
+    if (isFinal) {
+      const chart = buildMermaidChart(messages.value)
+      const eligibleBenefits = analyzeEligibleBenefits(messages.value)
+
+      if (eligibleBenefits.length > 0) {
+        setSelected(eligibleBenefits[0].id)
+      }
+
+      setChart(chart, {
+        generatedAt: Date.now(),
+        eligibleBenefits
+      })
+    }
+    nextTick().then(() => scrollToBottom(true))
+    if (done) setTimeout(done, 240)
+  }, delay)
+}
 
 function cleanText(txt) {
   if (!txt) return ''
-  // 移除所有非中文字、非英文字、非數字、非標點符號的字元，確保 JSON 解析穩定
   return txt
     .replace(/[^\x09\x0A\x0D\x20-\x7E\u4E00-\u9FFF\u3000-\u303F\uFF00-\uFFEF]/g, '')
     .trim()
@@ -776,9 +721,11 @@ function calcDateFromOffset(daysOffset, baseDate = new Date()) {
 
 // ✅ 把 collectorState 整理成表單要的 DEFAULT_RAW 結構
 function buildFormRawFromState(state) {
+  // 深拷貝一份模板，避免直接改到 DEFAULT_RAW 常數
   const raw = JSON.parse(JSON.stringify(DEFAULT_RAW))
 
-  // 1. 事故日期 → insuranceAccident.incidentDate
+  // ---------- 1. 事故日期 → insuranceAccident.incidentDate ----------
+  // state.accident_date: "YYYY-MM-DD"
   if (state.accident_date) {
     const [y, m, d] = state.accident_date.split('-')
     raw.insuranceAccident.incidentDate.year = y || ''
@@ -786,38 +733,32 @@ function buildFormRawFromState(state) {
     raw.insuranceAccident.incidentDate.day = (d || '').replace(/^0/, '')
   }
 
-  // 2. 事故時間 → injuryReport.injuryTime
+  // ---------- 2. 事故時間 → injuryReport.injuryTime ----------
+  // state.accident_time: "HH:mm"
   if (state.accident_time && state.accident_time.includes(':')) {
     const [hh, mm] = state.accident_time.split(':')
     raw.injuryReport.injuryTime.hour = hh || ''
     raw.injuryReport.injuryTime.minute = mm || ''
   }
 
-  // 3. 事故地點 → injuryReport.injuryPlace
+  // ---------- 3. 事故地點 → injuryReport.injuryPlace ----------
+  // 目前你只有一個 accident_place 字串，就先塞兩個欄位都用同一段
   if (state.accident_place) {
-    // 地點描述（例如：倉庫、貨櫃場）
+    raw.injuryReport.injuryPlace.address = state.accident_place
     raw.injuryReport.injuryPlace.locationDesc = state.accident_place
   }
 
-  // 3-b. 事故詳細地址（有的話就用這個；沒有就退回用 accident_place）
-  if (state.accident_address) {
-    raw.injuryReport.injuryPlace.address = state.accident_address
-  } else if (state.accident_place) {
-    raw.injuryReport.injuryPlace.address = state.accident_place
-  }
-
-
-  // 4. 事故發生情況 → injuryReport.causeAndProcess
+  // ---------- 4. 事故發生情況 → injuryReport.causeAndProcess ----------
   if (state.accident_type) {
     raw.injuryReport.causeAndProcess = state.accident_type
   }
-  // 4-b. 化學物質名稱 → injuryReport.chemicalName
-  if (state.chemical_name) {
-    raw.injuryReport.chemicalName = state.chemical_name
-  }
-  // 5. 無工作能力期間 → inabilityPeriod.from / to
+
+  // ---------- 5. 無工作能力期間 → inabilityPeriod.from / to ----------
+  // 目前沒有獨立欄位描述「休養期間」，先用 treatment_dates 估一個區間：
+  //   - 最早的 treatment_date 當 from
+  //   - 最晚的 treatment_date 當 to
   if (Array.isArray(state.treatment_dates) && state.treatment_dates.length > 0) {
-    const sorted = [...state.treatment_dates].sort()
+    const sorted = [...state.treatment_dates].sort() // YYYY-MM-DD 字串排序 OK
     const from = sorted[0]
     const to = sorted[sorted.length - 1]
 
@@ -835,50 +776,62 @@ function buildFormRawFromState(state) {
       raw.inabilityPeriod.to.day = (td || '').replace(/^0/, '')
     }
   }
-
-  // 6. jobContent
   if (state.job_content) {
     raw.injuryReport.jobContent = state.job_content
   }
 
-  // 7. returnToWork
+  // returnToWork
   if (state.has_returned === true && state.return_date) {
     const [y, m, d] = state.return_date.split('-')
     raw.returnToWork.hasReturned = true
     raw.returnToWork.date.year = y || ''
     raw.returnToWork.date.month = (m || '').replace(/^0/, '')
     raw.returnToWork.date.day = (d || '').replace(/^0/, '')
-  } else if (state.has_returned === false) {
-    raw.returnToWork.hasReturned = false
   }
 
-  // 8. incomeDuringLeave
+  // incomeDuringLeave
   raw.incomeDuringLeave.status = state.income_status || 'none'
   raw.incomeDuringLeave.leaveTypes = Array.isArray(state.leave_types)
     ? state.leave_types
     : []
 
-  // 9. inpatientCareSubsidy
+  // inpatientCareSubsidy
   if (typeof state.inpatient_care_apply === 'boolean') {
     raw.inpatientCareSubsidy.apply = state.inpatient_care_apply
   }
+  // ---------- 6. 住院照護補助 / 其他欄位 ----------
+  // 目前對話沒有直接收集相關資訊，先維持 DEFAULT_RAW 的預設值即可。
+  // 若未來你在 collectorState 加上：
+  //   - has_returned / return_date
+  //   - inpatient_care_apply
+  //   - job_content
+  //   - income_status / leaveTypes
+  // 就可以在這裡往下補 mapping。
+
+  // 範例：如果你之後新增 state.job_content：
+  // if (state.job_content) {
+  //   raw.injuryReport.jobContent = state.job_content
+  // }
 
   return raw
 }
+
+
 
 function scrollToBottom() {
   nextTick(() => {
     if (typeof window === 'undefined') return
 
-    // 這裡使用 documentElement.scrollHeight 更穩健，並確保是捲動整個視窗
+    const doc = document.documentElement || document.body
     window.scrollTo({
-      top: document.documentElement.scrollHeight,
+      top: doc.scrollHeight,
       behavior: 'smooth'
     })
   })
 }
 
-/* ===== 下面 documentDetails / analyzeEligibleBenefits / buildMermaidChart / goToBenefits 保持原本邏輯 ===== */
+/* 下面 documentDetails / analyzeEligibleBenefits / calculateDates / buildMermaidChart / goToBenefits
+   保持你原本的程式即可（已在檔案後半段），不用改。 */
 
 // 文件詳細資訊
 const documentDetails = {
@@ -1023,11 +976,8 @@ function analyzeEligibleBenefits(history) {
 
   const benefits = []
 
-  // 修正：應根據 collectorState 判斷，但為維持原邏輯，仍使用 allText
-  const state = collectorState.value
-
-  // 醫療給付 (只要有就醫資訊就建議申請)
-  if (state.medical_provider || allText.includes('燙傷') || allText.includes('受傷') || allText.includes('醫療')) {
+  // 分析是否符合各項申請條件
+  if (allText.includes('燙傷') || allText.includes('受傷') || allText.includes('醫療')) {
     benefits.push({
       id: 'medical',
       name: '災保醫療給付',
@@ -1049,8 +999,7 @@ function analyzeEligibleBenefits(history) {
     })
   }
 
-  // 傷病給付 (有全日不能工作期間就建議申請)
-  if (state.treatment_dates.length > 0 || allText.includes('請假') || allText.includes('休養') || allText.includes('無法工作')) {
+  if (allText.includes('請假') || allText.includes('休養') || allText.includes('無法工作')) {
     benefits.push({
       id: 'sick',
       name: '災保傷病給付及照護補助',
@@ -1072,7 +1021,6 @@ function analyzeEligibleBenefits(history) {
     })
   }
 
-  // 失能給付 (需有失能描述)
   if (allText.includes('失能') || allText.includes('永久') || allText.includes('功能受損')) {
     benefits.push({
       id: 'impair',
@@ -1095,35 +1043,52 @@ function analyzeEligibleBenefits(history) {
     })
   }
 
-  // 確保至少有一項補助
-  if (benefits.length === 0) {
-    return [{
-      id: 'medical',
-      name: '災保醫療給付',
-      deadline: '事故發生後 30 天內',
-      documents: [
-        { name: '就醫證明', details: documentDetails['就醫證明'] },
-        { name: '診斷證明書', details: documentDetails['診斷證明書'] },
-        { name: '醫療收據', details: documentDetails['醫療收據'] },
-        { name: '身分證影本', details: documentDetails['身分證影本'] },
-        { name: '勞保投保資料', details: documentDetails['勞保投保資料'] }
-      ],
-      steps: [
-        '向雇主通報職災',
-        '取得醫療證明文件',
-        '填寫申請書',
-        '送件至勞保局',
-        '等待審核結果'
-      ]
-    }]
+  return benefits.length > 0 ? benefits : [{
+    id: 'medical',
+    name: '災保醫療給付',
+    deadline: '事故發生後 30 天內',
+    documents: [
+      { name: '就醫證明', details: documentDetails['就醫證明'] },
+      { name: '診斷證明書', details: documentDetails['診斷證明書'] },
+      { name: '醫療收據', details: documentDetails['醫療收據'] },
+      { name: '身分證影本', details: documentDetails['身分證影本'] },
+      { name: '勞保投保資料', details: documentDetails['勞保投保資料'] }
+    ],
+    steps: [
+      '向雇主通報職災',
+      '取得醫療證明文件',
+      '填寫申請書',
+      '送件至勞保局',
+      '等待審核結果'
+    ]
+  }]
+}
+
+// 計算具體日期
+function calculateDates(baseDate = new Date()) {
+  const today = new Date(baseDate)
+  const formatDate = (date) => {
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${month}/${day}`
   }
 
-  return benefits
+  return {
+    day1: formatDate(new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000)), // 明天
+    day3: formatDate(new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000)), // 3天後
+    day7: formatDate(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)), // 7天後
+    day14: formatDate(new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000)), // 14天後
+    day21: formatDate(new Date(today.getTime() + 21 * 24 * 60 * 60 * 1000)), // 21天後
+    day30: formatDate(new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)), // 30天後
+    day45: formatDate(new Date(today.getTime() + 45 * 24 * 60 * 60 * 1000)), // 45天後
+  }
 }
 
 // 根據對話內容產生實用的申請流程圖
 function buildMermaidChart(history) {
-  // 保持原樣，因為這是一個固定範例流程
+  const eligibleBenefits = analyzeEligibleBenefits(history)
+
+  // 使用與 benefits.vue 相同的四個步驟流程圖
   return `flowchart TB
       A["1. 就醫診斷\n至醫療院所就醫治療\n請醫師開立「傷病診斷書」\n必須載明「住院期間需人照護」"] --> B["2. 編輯與下載申請文件\n下載「傷病給付及住院照護補助申請書」"]
       
@@ -1137,13 +1102,16 @@ function buildMermaidChart(history) {
 }
 
 function goToBenefits() {
+  // 根據對話內容生成實用的流程圖
   const chart = buildMermaidChart(messages.value)
   const eligibleBenefits = analyzeEligibleBenefits(messages.value)
 
+  // 設定第一個符合的項目為預設選中
   if (eligibleBenefits.length > 0) {
     setSelected(eligibleBenefits[0].id)
   }
 
+  // 設定動態生成的流程圖
   setChart(chart, {
     triggeredBy: 'button',
     eligibleBenefits: eligibleBenefits,
@@ -1155,9 +1123,7 @@ function goToBenefits() {
 </script>
 
 
-
 <style scoped>
-/* CSS 保持不變 */
 .page {
   min-height: 100vh;
   background: #ffffff;
